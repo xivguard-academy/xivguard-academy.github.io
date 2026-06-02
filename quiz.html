@@ -13,7 +13,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey:            "AIzaSyDW2mGxX3qR92-RceG8k5OV3_HsNUuAvnk",
@@ -24,7 +24,7 @@
     appId:             "1:924156526350:web:8cf9188e4d7e8b9121e15f"
   };
 
-  const ADMIN_EMAIL = "sbabaitis@gmail.com"; // το email σου ως admin
+  const ADMIN_EMAIL = "sbabaitis@gmail.com";
 
   const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -35,10 +35,7 @@
   const appRoot  = document.getElementById('app-root');
 
   onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.href = 'index.html';
-      return;
-    }
+    if (!user) { window.location.href = 'index.html'; return; }
     const snap = await getDoc(doc(db, 'users', user.uid));
     if (!snap.exists()) { window.location.href = 'index.html'; return; }
     const data = snap.data();
@@ -46,18 +43,62 @@
       window.location.href = 'index.html?status=' + data.status;
       return;
     }
-    // Αποθήκευση info χρήστη στο window για χρήση στη saveResults
-    window._fbUser = user;
-    window._db     = db;
+    window._fbUser      = user;
+    window._db          = db;
+    window._fbDoc       = doc;
+    window._fbSetDoc    = setDoc;
+    window._fbDeleteDoc = deleteDoc;
     window._fbCollection = collection;
     window._fbAddDoc     = addDoc;
     window._fbTimestamp  = serverTimestamp;
+
     authGate.style.display = 'none';
     appRoot.style.display  = 'block';
-    // Εμφάνιση email στο header
     const emailEl = document.getElementById('user-email-display');
     if(emailEl) emailEl.textContent = user.email;
+
+    // ── Έλεγχος για αποθηκευμένη πρόοδο ──────────────────────────────────
+    try {
+      const progSnap = await getDoc(doc(db, 'progress', user.uid));
+      if(progSnap.exists()){
+        const p = progSnap.data();
+        // Εμφάνιση dialog συνέχειας
+        document.getElementById('resume-info').textContent =
+          `Ερώτηση ${p.current + 1} από ${p.total} — Σωστές: ${p.score} | Λάθος: ${p.wrong}`;
+        document.getElementById('resume-modal').style.display = 'flex';
+        // Αποθήκευση progress data για χρήση αν επιλέξει Συνέχεια
+        window._savedProgress = p;
+      }
+    } catch(e){ console.log('No saved progress'); }
   });
+
+  // ── Συνέχεια από αποθηκευμένη πρόοδο ────────────────────────────────────
+  window.resumeProgress = () => {
+    const p = window._savedProgress;
+    if(!p) return;
+    document.getElementById('resume-modal').style.display = 'none';
+    // Φόρτωση αποθηκευμένης κατάστασης
+    current  = p.current;
+    score    = p.score;
+    wrong    = p.wrong;
+    phase    = 'quiz';
+    answers  = p.answers ? [...p.answers] : new Array(questions.length).fill(null);
+    answeredSelections = p.answeredSelections ? [...p.answeredSelections] : new Array(questions.length).fill(null);
+    // Rebuild skipped set
+    skipped  = new Set(p.skipped || []);
+    selected = null; revealed = false; pendingAnswer = null;
+    render(); renderGrid();
+  };
+
+  window.startFresh = () => {
+    document.getElementById('resume-modal').style.display = 'none';
+    // Διαγραφή αποθηκευμένης προόδου
+    if(window._fbUser && window._db){
+      window._fbDeleteDoc(window._fbDoc(window._db, 'progress', window._fbUser.uid))
+        .catch(e => console.log('Delete progress error:', e));
+    }
+    restart();
+  };
 
   // ── Logout ────────────────────────────────────────────────────────────────
   window.doLogout = async () => {
@@ -65,7 +106,6 @@
     window.location.href = 'index.html';
   };
 
-  // ── Admin link ────────────────────────────────────────────────────────────
   window.checkAdmin = (email) => email === ADMIN_EMAIL;
 </script>
 
@@ -92,6 +132,27 @@
 .logout-btn:hover{background:rgba(248,81,73,0.2);}
 .user-email{font-size:0.72rem;color:var(--text3);max-width:160px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* Resume Modal */
+#resume-modal{
+  position:fixed;inset:0;background:rgba(0,0,0,0.75);
+  display:none;align-items:center;justify-content:center;
+  z-index:99998;padding:1.5rem;
+}
+.resume-card{
+  background:var(--surface);border:1px solid var(--gold);
+  border-radius:var(--radius);padding:2rem;max-width:420px;width:100%;
+  text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.6);
+}
+.resume-icon{font-size:2.5rem;margin-bottom:0.75rem;}
+.resume-title{font-family:'Lora',Georgia,serif;font-size:1.2rem;font-weight:700;color:var(--gold);margin-bottom:0.5rem;}
+.resume-sub{font-size:0.85rem;color:var(--text2);margin-bottom:0.5rem;line-height:1.6;}
+.resume-info{font-size:0.78rem;color:var(--text3);background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 1rem;margin-bottom:1.5rem;}
+.resume-btns{display:flex;gap:0.75rem;justify-content:center;}
+.resume-btn-continue{flex:1;padding:0.8rem;background:var(--gold);color:#0b0d14;border:none;border-radius:10px;font-family:inherit;font-size:0.95rem;font-weight:700;cursor:pointer;transition:background 0.15s;}
+.resume-btn-continue:hover{background:var(--gold2);}
+.resume-btn-new{flex:1;padding:0.8rem;background:transparent;color:var(--text2);border:1.5px solid var(--border2);border-radius:10px;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer;transition:border-color 0.15s;}
+.resume-btn-new:hover{border-color:var(--red);color:var(--red);}
 </style>
 <style>
 
@@ -372,6 +433,20 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 
 <!-- APP ROOT (hidden until auth confirmed) -->
 <div id="app-root">
+
+<!-- RESUME MODAL -->
+<div id="resume-modal">
+  <div class="resume-card">
+    <div class="resume-icon">📖</div>
+    <div class="resume-title">Αποθηκευμένη Πρόοδος</div>
+    <div class="resume-sub">Έχεις ημιτελή προσπάθεια. Θέλεις να συνεχίσεις;</div>
+    <div class="resume-info" id="resume-info"></div>
+    <div class="resume-btns">
+      <button class="resume-btn-continue" onclick="resumeProgress()">▶ Συνέχεια</button>
+      <button class="resume-btn-new" onclick="startFresh()">🔄 Νέα Αρχή</button>
+    </div>
+  </div>
+</div>
 
 <!-- CINEMATIC INTRO -->
 <div id="intro-screen">
@@ -1007,6 +1082,8 @@ function confirmAnswer(){
   pendingAnswer = null;
   render();
   renderGrid();
+  // Αποθήκευση προόδου μετά από κάθε απάντηση
+  saveProgress();
 }
 
 function skipQuestion(){
@@ -1065,6 +1142,11 @@ function restart(){
   current=0; score=0; wrong=0; selected=null; revealed=false; phase='splash';
   answers.fill(null); answeredSelections.fill(null); skipped.clear(); pendingAnswer=null;
   resultsSaved = false;
+  // Διαγραφή αποθηκευμένης προόδου
+  if(window._fbUser && window._db){
+    window._fbDeleteDoc(window._fbDoc(window._db, 'progress', window._fbUser.uid))
+      .catch(e => console.log('Delete progress error:', e));
+  }
   render();
 }
 
@@ -1154,7 +1236,32 @@ async function saveResults(){
         type:        'theoretical'
       }
     );
+    // Διαγραφή αποθηκευμένης προόδου μετά την ολοκλήρωση
+    await window._fbDeleteDoc(window._fbDoc(window._db, 'progress', window._fbUser.uid));
   } catch(e){ console.error('Save error:', e); }
+}
+
+// ── Save progress to Firestore ──────────────────────────────────────────────
+async function saveProgress(){
+  if(!window._fbUser || !window._db) return;
+  if(phase === 'results') return; // μην αποθηκεύεις αν έχει τελειώσει
+  try {
+    await window._fbSetDoc(
+      window._fbDoc(window._db, 'progress', window._fbUser.uid),
+      {
+        uid:               window._fbUser.uid,
+        email:             window._fbUser.email,
+        current:           current,
+        score:             score,
+        wrong:             wrong,
+        total:             questions.length,
+        answers:           Array.from(answers),
+        answeredSelections:Array.from(answeredSelections),
+        skipped:           Array.from(skipped),
+        savedAt:           window._fbTimestamp()
+      }
+    );
+  } catch(e){ console.error('Save progress error:', e); }
 }
 
 
