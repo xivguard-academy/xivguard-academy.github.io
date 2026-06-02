@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XIV Guard Academy — Τράπεζα Θεμάτων | Άδεια Εργασίας ΙΑΑ (181 ερωτήσεις)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+
+<!-- ═══════════════════════════════════════════════
+     FIREBASE CONFIG — αντικατάστησε με τα δικά σου
+     ═══════════════════════════════════════════════ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyDW2mGxX3qR92-RceG8k5OV3_HsNUuAvnk",
+    authDomain:        "xiv-guard.firebaseapp.com",
+    projectId:         "xiv-guard",
+    storageBucket:     "xiv-guard.firebasestorage.app",
+    messagingSenderId: "924156526350",
+    appId:             "1:924156526350:web:8cf9188e4d7e8b9121e15f"
+  };
+
+  const ADMIN_EMAIL = "sbabaitis@gmail.com"; // το email σου ως admin
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // ── Auth gate ──────────────────────────────────────────────────────────────
+  const authGate = document.getElementById('auth-gate');
+  const appRoot  = document.getElementById('app-root');
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = 'index.html';
+      return;
+    }
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (!snap.exists()) { window.location.href = 'index.html'; return; }
+    const data = snap.data();
+    if (data.status !== 'approved') {
+      window.location.href = 'index.html?status=' + data.status;
+      return;
+    }
+    // Αποθήκευση info χρήστη στο window για χρήση στη saveResults
+    window._fbUser = user;
+    window._db     = db;
+    window._fbCollection = collection;
+    window._fbAddDoc     = addDoc;
+    window._fbTimestamp  = serverTimestamp;
+    authGate.style.display = 'none';
+    appRoot.style.display  = 'block';
+    // Εμφάνιση email στο header
+    const emailEl = document.getElementById('user-email-display');
+    if(emailEl) emailEl.textContent = user.email;
+  });
+
+  // ── Logout ────────────────────────────────────────────────────────────────
+  window.doLogout = async () => {
+    await signOut(auth);
+    window.location.href = 'index.html';
+  };
+
+  // ── Admin link ────────────────────────────────────────────────────────────
+  window.checkAdmin = (email) => email === ADMIN_EMAIL;
+</script>
+
+<style>
+#auth-gate{
+  position:fixed;inset:0;background:#0b0d14;
+  display:flex;align-items:center;justify-content:center;
+  z-index:99999;
+}
+.auth-spinner{
+  width:42px;height:42px;border-radius:50%;
+  border:3px solid rgba(239,159,39,0.2);
+  border-top-color:#EF9F27;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+#app-root{display:none;}
+.logout-btn{
+  background:rgba(248,81,73,0.1);border:1px solid rgba(248,81,73,0.3);
+  border-radius:8px;padding:0.35rem 0.75rem;color:#f85149;
+  font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;
+  transition:background 0.15s;
+}
+.logout-btn:hover{background:rgba(248,81,73,0.2);}
+.user-email{font-size:0.72rem;color:var(--text3);max-width:160px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+</style>
+<style>
+
+/* ─── Cinematic Intro ─────────────────────────────────────────────────────── */
+#intro-screen{
+  position:fixed;inset:0;z-index:9999;background:#000;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+/* Geometric grid background */
+#intro-screen::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(239,159,39,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(239,159,39,0.04) 1px, transparent 1px);
+  background-size:60px 60px;
+  animation:gridPulse 8s ease-in-out infinite;
+}
+/* Radial vignette overlay */
+#intro-screen::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 70% at 50% 50%, transparent 20%, #000 100%);
+  pointer-events:none;
+}
+@keyframes gridPulse{
+  0%,100%{opacity:0.6;}
+  50%{opacity:1;}
+}
+/* Horizontal scan line */
+.intro-scanline{
+  position:absolute;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent 0%,rgba(239,159,39,0.5) 30%,rgba(239,159,39,0.8) 50%,rgba(239,159,39,0.5) 70%,transparent 100%);
+  animation:scan 9s linear infinite;
+  z-index:1;
+}
+@keyframes scan{
+  0%{top:-2px;opacity:0;}
+  5%{opacity:1;}
+  95%{opacity:1;}
+  100%{top:100%;opacity:0;}
+}
+/* Corner accents */
+.intro-corner{position:absolute;width:40px;height:40px;z-index:2;}
+.intro-corner.tl{top:2rem;left:2rem;border-top:1px solid rgba(239,159,39,0.5);border-left:1px solid rgba(239,159,39,0.5);}
+.intro-corner.tr{top:2rem;right:2rem;border-top:1px solid rgba(239,159,39,0.5);border-right:1px solid rgba(239,159,39,0.5);}
+.intro-corner.bl{bottom:2rem;left:2rem;border-bottom:1px solid rgba(239,159,39,0.5);border-left:1px solid rgba(239,159,39,0.5);}
+.intro-corner.br{bottom:2rem;right:2rem;border-bottom:1px solid rgba(239,159,39,0.5);border-right:1px solid rgba(239,159,39,0.5);}
+
+.intro-content{
+  position:relative;z-index:3;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:100%;height:100%;
+}
+.intro-logo-wrap{
+  opacity:0;transform:scale(0.75);
+  transition:opacity 1.2s ease, transform 1.2s cubic-bezier(0.22,1,0.36,1);
+}
+.intro-logo-wrap.show{opacity:1;transform:scale(1);}
+
+/* Thin divider line */
+.intro-divider{
+  width:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(239,159,39,0.7),transparent);
+  margin:2rem 0 1.8rem;
+  transition:width 1.0s ease;
+}
+.intro-divider.show{width:280px;}
+
+.intro-tagline{
+  font-family:'Lora',Georgia,serif;
+  font-size:clamp(1.2rem,2.5vw,1.8rem);
+  font-weight:600;
+  letter-spacing:0.25em;
+  color:#EF9F27;
+  opacity:0;
+  transform:translateY(16px);
+  transition:opacity 1.1s ease, transform 1.1s cubic-bezier(0.22,1,0.36,1);
+}
+.intro-tagline.show{opacity:1;transform:translateY(0);}
+.intro-academy{
+  font-family:'Plus Jakarta Sans',Inter,sans-serif;
+  font-size:clamp(0.75rem,1.38vw,0.98rem);
+  font-weight:700;
+  letter-spacing:0.45em;
+  color:#ffffff;
+  margin-top:0.6rem;
+  opacity:0;
+  transition:opacity 1.0s ease;
+}
+.intro-academy.show{opacity:1;}
+.intro-byline{
+  font-family:'Plus Jakarta Sans',Inter,sans-serif;
+  font-size:clamp(0.65rem,1.1vw,0.85rem);
+  font-weight:500;
+  letter-spacing:0.12em;
+  color:rgba(255,255,255,0.55);
+  margin-top:1.2rem;
+  line-height:1.7;
+  text-align:center;
+  opacity:0;
+  transition:opacity 1.2s ease;
+}
+.intro-byline span{
+  display:block;
+  font-size:clamp(0.8rem,1.3vw,1rem);
+  font-weight:700;
+  color:rgba(239,159,39,0.85);
+  letter-spacing:0.18em;
+  margin-top:0.15rem;
+}
+.intro-byline.show{opacity:1;}
+#global-byline{
+  position:fixed;bottom:0.75rem;right:1.2rem;
+  font-size:0.62rem;font-weight:600;
+  letter-spacing:0.06em;color:var(--text3);
+  z-index:500;pointer-events:none;
+  font-family:'Plus Jakarta Sans',Inter,sans-serif;
+  line-height:1.5;text-align:right;
+  opacity:0.6;
+}
+
+
+/* ─── Reset & Base ─────────────────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0b0d14; --surface:#13151f; --surface2:#1a1d2a;
+  --border:#252838; --border2:#2e3248;
+  --gold:#EF9F27; --gold2:#f5c842; --gold-dim:rgba(239,159,39,0.12);
+  --text:#e8eaf2; --text2:#9aa0bc; --text3:#636880;
+  --green:#3fb950; --red:#f85149;
+  --radius:12px; --radius-sm:8px;
+}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+
+/* ─── Header ───────────────────────────────────────────────────────────── */
+.header{
+  background:var(--surface);border-bottom:1px solid var(--gold);
+  padding:0.875rem 1.5rem;display:flex;align-items:center;
+  justify-content:space-between;gap:1rem;
+  box-shadow:0 4px 24px rgba(239,159,39,0.08);
+  position:sticky;top:0;z-index:100;
+}
+.header-left{display:flex;align-items:center;gap:1rem;}
+.header-logo{flex-shrink:0;}
+.header-info{}
+.header-title{font-family:'Lora',Georgia,serif;font-size:0.95rem;font-weight:700;color:var(--gold);letter-spacing:0.02em;line-height:1.3;}
+.header-sub{font-size:0.72rem;color:var(--text3);margin-top:2px;letter-spacing:0.03em;}
+.header-score{background:var(--gold-dim);border:1px solid rgba(239,159,39,0.28);border-radius:var(--radius-sm);padding:0.35rem 0.875rem;font-size:0.85rem;font-weight:700;color:var(--gold);white-space:nowrap;display:none;}
+
+/* ─── Progress ─────────────────────────────────────────────────────────── */
+.progress-wrap{background:var(--surface);padding:0.5rem 1.5rem;border-bottom:1px solid var(--border);display:none;align-items:center;gap:0.875rem;}
+.progress-bar{flex:1;height:4px;background:var(--border2);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;transition:width 0.4s ease;}
+.progress-text{font-size:0.72rem;color:var(--text3);white-space:nowrap;font-weight:600;}
+
+/* ─── Layout ───────────────────────────────────────────────────────────── */
+.app-body{display:flex;flex:1;max-width:1200px;margin:0 auto;width:100%;padding:1.5rem 1rem 3rem;}
+.sidebar{width:220px;flex-shrink:0;margin-right:1.5rem;}
+.main-col{flex:1;min-width:0;}
+
+/* ─── Sidebar ───────────────────────────────────────────────────────────── */
+.sidebar-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;}
+.sidebar-title{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:0.875rem;}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid var(--border);}
+.stat-row:last-child{border-bottom:none;}
+.stat-label{font-size:0.78rem;color:var(--text2);}
+.stat-value{font-size:0.9rem;font-weight:700;color:var(--text);}
+.stat-value.gold{color:var(--gold);}
+.stat-value.green{color:var(--green);}
+.stat-value.red{color:var(--red);}
+.accuracy-bar{margin-top:0.875rem;}
+.accuracy-track{height:6px;background:var(--border2);border-radius:3px;overflow:hidden;margin-top:0.35rem;}
+.accuracy-fill{height:100%;border-radius:3px;transition:width 0.4s ease;background:var(--green);}
+
+/* Jump box */
+.jump-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;}
+.jump-title{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:0.75rem;}
+.jump-input-wrap{display:flex;gap:0.5rem;}
+.jump-input{flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:0.4rem 0.6rem;color:var(--text);font-family:inherit;font-size:0.82rem;width:100%;}
+.jump-input:focus{outline:none;border-color:var(--gold);}
+.jump-btn{background:var(--gold);color:#0b0d14;border:none;border-radius:var(--radius-sm);padding:0.4rem 0.7rem;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.jump-btn:hover{background:var(--gold2);}
+
+/* ─── Question Card ─────────────────────────────────────────────────────── */
+.q-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;box-shadow:0 4px 20px rgba(0,0,0,0.35);animation:fadeUp 0.25s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.q-num{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--gold);margin-bottom:0.6rem;}
+.q-text{font-family:'Lora',Georgia,serif;font-size:1.05rem;font-weight:600;color:var(--text);line-height:1.7;}
+.options{display:flex;flex-direction:column;gap:0.625rem;margin-top:1.5rem;}
+.opt{display:flex;align-items:flex-start;gap:0.875rem;padding:0.8rem 1rem;border:1.5px solid var(--border2);border-radius:10px;background:var(--bg);cursor:pointer;text-align:left;width:100%;transition:border-color 0.15s,background 0.15s;font-family:inherit;}
+.opt:hover:not(:disabled){border-color:var(--gold);background:rgba(239,159,39,0.05);}
+.opt:disabled{cursor:default;}
+.opt-letter{width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--text3);flex-shrink:0;margin-top:1px;}
+.opt-text{font-size:0.92rem;color:var(--text2);line-height:1.55;}
+.opt.correct{border-color:var(--green);background:rgba(63,185,80,0.07);}
+.opt.correct .opt-letter{background:var(--green);border-color:var(--green);color:#0b0d14;}
+.opt.correct .opt-text{color:var(--green);}
+.opt.wrong{border-color:var(--red);background:rgba(248,81,73,0.07);}
+.opt.wrong .opt-letter{background:var(--red);border-color:var(--red);color:#fff;}
+.opt.wrong .opt-text{color:var(--red);}
+.opt.neutral{opacity:0.35;}
+.opt.pending{border-color:var(--gold);background:rgba(239,159,39,0.08);}
+
+/* ─── Summary ───────────────────────────────────────────────────────────── */
+.summary-box{background:rgba(239,159,39,0.05);border:1px solid rgba(239,159,39,0.2);border-radius:10px;padding:1.25rem;margin-top:1.125rem;animation:fadeUp 0.3s ease;}
+.summary-lbl{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin-bottom:0.5rem;}
+.summary-text{font-size:0.875rem;color:var(--text2);line-height:1.9;}
+.feedback{display:inline-flex;align-items:center;gap:0.4rem;padding:0.35rem 0.875rem;border-radius:20px;font-size:0.82rem;font-weight:700;margin-top:0.875rem;}
+.feedback.ok{background:rgba(63,185,80,0.1);color:var(--green);border:1px solid rgba(63,185,80,0.25);}
+.feedback.no{background:rgba(248,81,73,0.1);color:var(--red);border:1px solid rgba(248,81,73,0.25);}
+.next-btn{width:100%;padding:0.8rem;background:var(--gold);color:#0b0d14;border:none;border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-top:0.875rem;transition:background 0.15s;font-family:inherit;letter-spacing:0.02em;}
+.next-btn:hover{background:var(--gold2);}
+
+/* ─── Splash ─────────────────────────────────────────────────────────────── */
+.splash{background:transparent;border:none;padding:3rem 2rem;text-align:center;}
+.splash-logo{margin-bottom:1.5rem;display:flex;justify-content:center;}
+.splash h2{font-family:'Lora',Georgia,serif;font-size:1.35rem;font-weight:700;color:var(--gold);margin-bottom:0.75rem;}
+.splash p{font-size:0.9rem;color:var(--text2);margin-bottom:2rem;line-height:1.8;}
+.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.875rem;margin-bottom:2rem;}
+.info-box{background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:0.875rem;}
+.info-num{font-size:1.4rem;font-weight:800;color:var(--gold);}
+.info-lbl{font-size:0.72rem;color:var(--text3);margin-top:2px;}
+.start-btn{padding:0.875rem 3rem;background:var(--gold);color:#0b0d14;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:0.03em;transition:background 0.15s;}
+.start-btn:hover{background:var(--gold2);}
+
+/* ─── Results ────────────────────────────────────────────────────────────── */
+.results{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 2rem;text-align:center;}
+.results-icon{font-size:3rem;margin-bottom:1rem;}
+.results-title{font-family:'Lora',Georgia,serif;font-size:1.4rem;font-weight:700;color:var(--text);margin-bottom:0.5rem;}
+.results-score{font-size:3.5rem;font-weight:800;color:var(--gold);margin:1rem 0;}
+.results-pct{font-size:1.1rem;color:var(--text2);margin-bottom:0.5rem;}
+.results-msg{font-size:0.9rem;color:var(--text3);margin-bottom:2rem;}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.875rem;margin-bottom:2rem;max-width:320px;margin-left:auto;margin-right:auto;}
+.results-stat{background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:0.875rem;}
+.results-stat .n{font-size:1.5rem;font-weight:800;}
+.results-stat .l{font-size:0.72rem;color:var(--text3);margin-top:2px;}
+.restart-btn{padding:0.75rem 2.5rem;background:var(--gold);color:#0b0d14;border:none;border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s;}
+.restart-btn:hover{background:var(--gold2);}
+
+
+/* ─── Question Grid ───────────────────────────────────────────────────────── */
+.q-grid-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;}
+.q-grid-title{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:0.75rem;}
+.q-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;}
+.q-dot{width:100%;aspect-ratio:1;border-radius:3px;background:var(--border2);border:1px solid var(--border);cursor:pointer;transition:transform 0.1s;font-size:0;}
+#p-grid .q-dot{width:12px;height:12px;border-radius:2px;}
+.q-dot.correct,.q-dot.wrong{cursor:pointer;}
+.q-dot.skipped{background:#7c3aed;border-color:#9f67ff;}
+.q-dot:hover{transform:scale(1.2);}
+.q-dot.current{background:var(--gold);border-color:var(--gold2);box-shadow:0 0 6px rgba(239,159,39,0.5);}
+.q-dot.correct{background:var(--green);border-color:var(--green);}
+.q-dot.wrong{background:var(--red);border-color:var(--red);}
+.q-grid-legend{display:flex;gap:0.75rem;margin-top:0.625rem;flex-wrap:wrap;}
+.q-grid-legend span{display:flex;align-items:center;gap:3px;font-size:0.65rem;color:var(--text3);}
+.q-grid-legend span::before{content:'';width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+.q-grid-legend .l-cur::before{background:var(--gold);}
+.q-grid-legend .l-ok::before{background:var(--green);}
+.q-grid-legend .l-no::before{background:var(--red);}
+.q-grid-legend .l-un::before{background:var(--border2);border:1px solid var(--border);}
+.q-grid-legend .l-sk::before{background:#7c3aed;}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media(max-width:900px){
+  .sidebar{display:none;}
+  .main-col{margin-left:0;}
+  .app-body{padding:1rem 0.75rem 3rem;}
+  .q-card{padding:1.25rem;}
+  .info-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH GATE (spinner) -->
+<div id="auth-gate">
+  <div class="auth-spinner"></div>
+</div>
+
+<!-- APP ROOT (hidden until auth confirmed) -->
+<div id="app-root">
+
+<!-- CINEMATIC INTRO -->
+<div id="intro-screen">
+  <div class="intro-scanline"></div>
+  <div class="intro-corner tl"></div>
+  <div class="intro-corner tr"></div>
+  <div class="intro-corner bl"></div>
+  <div class="intro-corner br"></div>
+
+  <div class="intro-content">
+    <div class="intro-logo-wrap" id="intro-logo">
+      <svg width="min(600px, 80vw)" height="min(282px, 37.6vw)" viewBox="190 20 300 280" xmlns="http://www.w3.org/2000/svg">
+        <rect x="190" y="20" width="300" height="280" rx="10" fill="#000"/>
+        <ellipse cx="340" cy="148" rx="145" ry="135" fill="url(#ig)"/>
+        <defs>
+          <radialGradient id="ig" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#1e1b6e" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <g transform="translate(340,128)">
+          <polygon points="0,-74 64,-37 64,37 0,74 -64,37 -64,-37" fill="#070d28" stroke="#EF9F27" stroke-width="2"/>
+          <circle cx="0" cy="-31" r="6.5" fill="#EF9F27"/>
+          <circle cx="-27" cy="6" r="6.5" fill="#EF9F27"/>
+          <circle cx="27" cy="6" r="6.5" fill="#EF9F27"/>
+          <circle cx="0" cy="29" r="6.5" fill="#FAC775"/>
+          <line x1="0" y1="-24.5" x2="-22" y2="4.5" stroke="#EF9F27" stroke-width="1.8" opacity="0.85"/>
+          <line x1="0" y1="-24.5" x2="22" y2="4.5" stroke="#EF9F27" stroke-width="1.8" opacity="0.85"/>
+          <line x1="-22" y1="4.5" x2="22" y2="4.5" stroke="#EF9F27" stroke-width="1.8" opacity="0.85"/>
+          <line x1="-22" y1="4.5" x2="0" y2="26" stroke="#FAC775" stroke-width="1.8" opacity="0.85"/>
+          <line x1="22" y1="4.5" x2="0" y2="26" stroke="#FAC775" stroke-width="1.8" opacity="0.85"/>
+          <circle cx="0" cy="-31" r="3.2" fill="#FAEEDA"/>
+          <circle cx="-27" cy="6" r="3.2" fill="#FAEEDA"/>
+          <circle cx="27" cy="6" r="3.2" fill="#FAEEDA"/>
+          <circle cx="0" cy="29" r="3.2" fill="#FAEEDA"/>
+        </g>
+        <text x="340" y="240" text-anchor="middle" font-size="28" letter-spacing="6">
+          <tspan font-family="Cinzel,Georgia,serif" font-weight="700" fill="#FFFFFF">XIV </tspan>
+          <tspan font-family="Inter,sans-serif" font-weight="700" fill="#EF9F27">GUARD</tspan>
+        </text>
+        <text x="340" y="266" text-anchor="middle" font-family="Inter,sans-serif" font-size="10.5" font-weight="400" letter-spacing="7.5" fill="#8890B5">ACADEMY</text>
+      </svg>
+    </div>
+
+    <div class="intro-divider" id="intro-divider"></div>
+    <div class="intro-tagline" id="intro-tagline">The Fourteenth Guard</div>
+    <div class="intro-academy" id="intro-academy">ACADEMY</div>
+    <div class="intro-byline" id="intro-byline">Designed &amp; Developed by<span>STYLIANOS BAMPAITIS</span></div>
+  </div>
+</div>
+
+<div id="global-byline">Designed &amp; Developed by<br>Stylianos Bampaitis</div>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">
+      <svg width="140" height="66" viewBox="190 20 300 280" role="img" xmlns="http://www.w3.org/2000/svg" style="">
+  <title style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">XIV Guard Academy Logo — matched size</title>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3730a3" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#080c18" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+
+  <rect x="190" y="20" width="300" height="280" rx="10" fill="#13151f" style="fill:rgb(19, 21, 31);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <ellipse cx="340" cy="148" rx="140" ry="130" fill="url(#glow)" style="stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <g transform="translate(340,130)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <polygon points="0,-72 62,-36 62,36 0,72 -62,36 -62,-36" fill="#0d1230" stroke="#EF9F27" stroke-width="1.5" style="fill:rgb(13, 18, 48);stroke:rgb(239, 159, 39);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="0" cy="-30" r="5" fill="#EF9F27" style="fill:rgb(239, 159, 39);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="-26" cy="6" r="5" fill="#EF9F27" style="fill:rgb(239, 159, 39);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="26" cy="6" r="5" fill="#EF9F27" style="fill:rgb(239, 159, 39);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="0" cy="28" r="5" fill="#FAC775" style="fill:rgb(250, 199, 117);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="0" y1="-25" x2="-22" y2="4" stroke="#EF9F27" stroke-width="1" opacity="0.7" style="fill:rgb(0, 0, 0);stroke:rgb(239, 159, 39);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.7;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="0" y1="-25" x2="22" y2="4" stroke="#EF9F27" stroke-width="1" opacity="0.7" style="fill:rgb(0, 0, 0);stroke:rgb(239, 159, 39);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.7;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="-22" y1="4" x2="22" y2="4" stroke="#EF9F27" stroke-width="1" opacity="0.7" style="fill:rgb(0, 0, 0);stroke:rgb(239, 159, 39);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.7;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="-22" y1="4" x2="0" y2="25" stroke="#FAC775" stroke-width="1" opacity="0.7" style="fill:rgb(0, 0, 0);stroke:rgb(250, 199, 117);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.7;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="22" y1="4" x2="0" y2="25" stroke="#FAC775" stroke-width="1" opacity="0.7" style="fill:rgb(0, 0, 0);stroke:rgb(250, 199, 117);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.7;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="0" cy="-30" r="2.5" fill="#FAEEDA" style="fill:rgb(250, 238, 218);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="-26" cy="6" r="2.5" fill="#FAEEDA" style="fill:rgb(250, 238, 218);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="26" cy="6" r="2.5" fill="#FAEEDA" style="fill:rgb(250, 238, 218);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="0" cy="28" r="2.5" fill="#FAEEDA" style="fill:rgb(250, 238, 218);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  </g>
+
+  <text x="340" y="232" text-anchor="middle" font-size="22" letter-spacing="5" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:22px;font-weight:400;text-anchor:middle;dominant-baseline:auto">
+    <tspan font-family="'Cinzel','Palatino Linotype','Book Antiqua',Georgia,serif" font-weight="700" fill="#FFFFFF" style="fill:rgb(255, 255, 255);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:Cinzel, &quot;Palatino Linotype&quot;, &quot;Book Antiqua&quot;, Georgia, serif;font-size:22px;font-weight:700;text-anchor:middle;dominant-baseline:auto">XIV </tspan><tspan font-family="'Inter','Helvetica Neue',sans-serif" font-weight="700" fill="#EF9F27" style="fill:rgb(239, 159, 39);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:Inter, &quot;Helvetica Neue&quot;, sans-serif;font-size:22px;font-weight:700;text-anchor:middle;dominant-baseline:auto">GUARD</tspan>
+  </text>
+
+  <text x="340" y="256" text-anchor="middle" font-family="'Inter','Helvetica Neue',sans-serif" font-size="9" font-weight="400" letter-spacing="6" fill="#8890B5" style="fill:rgb(136, 144, 181);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:Inter, &quot;Helvetica Neue&quot;, sans-serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto">ACADEMY</text>
+
+</svg>
+    </div>
+    <div class="header-info">
+      <div class="header-title">Προσωπικό Ιδιωτικής Ασφάλειας</div>
+      <div class="header-sub">Κατάλογος ερωτήσεων Εξετάσεων Πιστοποίησης Επαγγελματικής Κατάρτισης Προσωπικού Ιδιωτικής Ασφάλειας</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:0.625rem;">
+    <span class="user-email" id="user-email-display"></span>
+    <button id="home-btn" onclick="goHome()" style="display:none;background:rgba(239,159,39,0.1);border:1px solid rgba(239,159,39,0.3);border-radius:8px;padding:0.35rem 0.75rem;color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s;" onmouseover="this.style.background='rgba(239,159,39,0.2)'" onmouseout="this.style.background='rgba(239,159,39,0.1)'">⌂ Αρχική</button>
+    <div class="header-score" id="hdr-score">Σκορ: <span id="score-val">0</span></div>
+    <button class="logout-btn" onclick="doLogout()">Έξοδος</button>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-wrap" id="progress-wrap">
+  <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+  <div class="progress-text" id="prog-text">0 / 124</div>
+</div>
+
+<!-- BODY -->
+<div class="app-body">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar" style="display:none;">
+
+    <div class="q-grid-card" id="p-grid-card" style="display:none;">
+      <div class="q-grid-title">Χάρτης Ερωτήσεων</div>
+      <div class="q-grid" id="p-grid" style="grid-template-columns:repeat(7,12px);gap:3px;"></div>
+      <div class="q-grid-legend" style="flex-direction:column;gap:0.4rem;margin-top:0.5rem;">
+        <span class="l-cur">Τρέχουσα</span>
+        <span class="l-ok">Το ήξερα</span>
+        <span class="l-no">Δεν το ήξερα</span>
+        <span class="l-sk">Παράβλεψη</span>
+        <span class="l-un">Αναπάντητη</span>
+      </div>
+    </div>
+    <div class="q-grid-card" id="q-grid-card">
+      <div class="q-grid-title">Χάρτης Ερωτήσεων</div>
+      <div class="q-grid" id="q-grid"></div>
+      <div class="q-grid-legend">
+        <span class="l-cur">Τρέχουσα</span>
+        <span class="l-ok">Σωστή</span>
+        <span class="l-no">Λάθος</span>
+        <span class="l-un">Αναπάντητη</span>
+        <span class="l-sk">Παραβλέφθηκε</span>
+      </div>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-title">Στατιστικά</div>
+      <div class="stat-row"><span class="stat-label">Ερώτηση</span><span class="stat-value gold" id="s-cur">—</span></div>
+      <div class="stat-row"><span class="stat-label">Σωστές</span><span class="stat-value green" id="s-cor">0</span></div>
+      <div class="stat-row"><span class="stat-label">Λάθος</span><span class="stat-value red" id="s-wr">0</span></div>
+      <div class="stat-row"><span class="stat-label">Απομένουν</span><span class="stat-value" id="s-rem">124</span></div>
+      <div class="accuracy-bar">
+        <div class="stat-label">Ποσοστό επιτυχίας</div>
+        <div class="accuracy-track"><div class="accuracy-fill" id="acc-fill" style="width:0%"></div></div>
+        <div style="font-size:0.72rem;color:var(--text3);margin-top:4px;" id="acc-txt">—</div>
+      </div>
+    </div>
+    <div class="jump-card">
+      <div class="jump-title">Μετάβαση σε ερώτηση</div>
+      <div class="jump-input-wrap">
+        <input class="jump-input" id="jump-input" type="text" placeholder="π.χ. Α45" />
+        <button class="jump-btn" onclick="jumpTo()">→</button>
+      </div>
+      <div style="font-size:0.68rem;color:var(--text3);margin-top:0.5rem;" id="jump-msg"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-col">
+    <div id="main-content"></div>
+  </main>
+</div>
+
+<script>
+const questions = [{"id":"Α1","question":"Ποιο είναι το νομοθέτημα που ρυθμίζει τις προϋποθέσεις λειτουργίας των Ιδιωτικών Επιχειρήσεων Παροχής Υπηρεσιών Ασφαλείας (Ι.Ε.Π.Υ.Α.) καθώς και τα προσόντα και τις υποχρεώσεις του προσωπικού αυτών;","options":["Ο ν.4707/2021 ως έχει τροποποιηθεί και ισχύει.","Ο ν.1481/1999 ως έχει τροποποιηθεί και ισχύει.","Ο ν.3303/2008 ως έχει τροποποιηθεί και ισχύει.","Ο ν.2518/1997 ως έχει τροποποιηθεί και ισχύει."],"correct":3,"summary":""},{"id":"Α2","question":"Ποιες θεωρούνται Ιδιωτικές Επιχειρήσεις Παροχής Υπηρεσιών Ασφαλείας (Ι.Ε.Π.Υ.Α.);","options":["Οι ιδιωτικές επιχειρήσεις οι οποίες παρέχουν σε τρίτους υπηρεσίες δημόσιας αστυνόμευσης, ίδιες με αυτές που παρέχει η Ελληνική Αστυνομία.","Οι ιδιωτικές επιχειρήσεις οι οποίες παρέχουν σε τρίτους υπηρεσίες, όπως η επιτήρηση ή φύλαξη περιουσιακών αγαθών και εγκαταστάσεων, η προστασία φυσικών προσώπων και η ασφαλής μεταφορά χρημάτων και αξιών.","Οι δημόσιες επιχειρήσεις οι οποίες παρέχουν σε τρίτους υπηρεσίες δημόσιας αστυνόμευσης, ίδιες με αυτές που παρέχει η Ελληνική Αστυνομία..","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α3","question":"Τι εννοούμε με τον όρο Ιδιωτικό Προσωπικό Παροχής Υπηρεσιών Ασφάλειας;","options":["Νοείται ο εργαζόμενος του δημοσίου τομέα που αναλαμβάνει να επιτηρεί και να ελέγχει, με κάθε σύννομο μέσο και τρόπο, υλικά και άυλα αγαθά και αξίες, με σκοπό την ελαχιστοποίηση των πάσης φύσεως κινδύνων.","Νοείται ο εργαζόμενος του ιδιωτικού τομέα που αναλαμβάνει να επιτηρεί και να ελέγχει, με κάθε σύννομο ή παράνομο μέσο και τρόπο, υλικά και άυλα αγαθά και αξίες, με σκοπό την ελαχιστοποίηση των πάσης φύσεως κινδύνων.","Νοείται ο εργαζόμενος του ιδιωτικού τομέα που αναλαμβάνει να επιτηρεί και να ελέγχει, με κάθε σύννομο μέσο και τρόπο, υλικά και άυλα αγαθά και αξίες, με σκοπό την ελαχιστοποίηση των πάσης φύσεως κινδύνων.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α4","question":"Ποιο είναι το τυπικό προσόν για την εργασία ως Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Τυπικό προσόν για την εργασία ως Προσωπικό Ιδιωτικής Ασφάλειας είναι η κατοχή βιβλιαρίου υγείας.","Τυπικό προσόν για την εργασία ως Προσωπικό Ιδιωτικής Ασφάλειας είναι η κατοχή τίτλου επαγγελματικής κατάρτισης ειδικότητας συναφούς προς την άσκηση των δραστηριοτήτων που πρόκειται να ασκήσει.","Τυπικό προσόν για την εργασία ως Προσωπικό Ιδιωτικής Ασφάλειας είναι η κατοχή άδειας οπλοφορίας.","Όλα τα παραπάνω."],"correct":1,"summary":""},{"id":"Α5","question":"Από ποιον εκδίδεται η άδεια εργασίας Προσωπικού Ιδιωτικής Ασφάλειας;","options":["Από τον Αρχηγό της Ελληνικής Αστυνομίας.","Από τον Δήμο του τόπου μόνιμης κατοικίας του.","Από τον Διευθυντή της Αστυνομικής Διεύθυνσης ή της Διεύθυνσης Ασφαλείας, προκειμένου για τους νομούς Αττικής και Θεσσαλονίκης.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α6","question":"Για πόσο χρονικό διάστημα ισχύει η άδεια εργασίας (Α’και Β’ κατηγορίας) του Προσωπικού Ιδιωτικής Ασφάλειας και για πόσο χρονικό διάστημα μπορεί να ανανεωθεί;","options":["Ισχύει για δέκα (10) χρόνια και ανανεώνεται για πέντε (5) χρόνια, εφόσον συντρέχουν οι προϋποθέσεις της αρχικής χορήγησης.","Ισχύει για δέκα (10) χρόνια και ανανεώνεται για ίσο χρονικό διάστημα, εφόσον","Ισχύει για τρία (3) χρόνια και ανανεώνεται για ίσο χρονικό διάστημα, εφόσον συντρέχουν οι προϋποθέσεις της αρχικής χορήγησης.","Ισχύει για πέντε (5) χρόνια και ανανεώνεται για ίσο χρονικό διάστημα, εφόσον συντρέχουν οι προϋποθέσεις της αρχικής χορήγησης.","Κανένα από τα παραπάνω."],"correct":3,"summary":""},{"id":"Α7","question":"Με τον ν.2518/1997, όπως αντικαταστάθηκε με τον ν.3707/2008, οι άδειες του Προσωπικού Ιδιωτικής Ασφάλειας κατηγοριοποιήθηκαν:","options":["Σε Α και Β κατηγορίας.","Σε Α, Β και Γ κατηγορίας.","Σε Α, Β, Γ και Δ κατηγορίας.","Σε Α, Β, Γ, Δ και Ε κατηγορίας.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α8","question":"Τι εννοούμε με το αρκτικόλεξο (αρχικά) Ι.Ε.Π.Υ.Α.;","options":["Ιδιωτικές Εργασίες Παροχής Υπηρεσιών Ασφαλείας.","Ιδιωτική Ένωση Παροχής Υπηρεσιών Ασφάλισης.","Ιδιωτική Επιχείρηση Παροχής Υπηρεσιών Ασφαλείας.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α9","question":"Οι κανόνες επαγγελματικής δεοντολογίας του Προσωπικού Ιδιωτικής Ασφάλειας ρυθμίζουν:","options":["Την παρουσία του.","Τη συμπεριφορά του κατά την εκτέλεση των καθηκόντων.","Την επαγγελματική αγωγή - σκέψη του.","Τον σεβασμό των ανθρωπίνων δικαιωμάτων.","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α10","question":"Ποια είναι τα βασικά επαγγελματικά προσόντα του Προσωπικού Ιδιωτικής Ασφάλειας;","options":["Η ικανότητα εφαρμογής οδηγιών.","Η ικανότητα εργασίας σε ομάδες.","Η ικανότητα παρατηρητικότητας και περιγραφής.","Οι ικανότητες επικοινωνίας.","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α11","question":"Ως _________ (για την εφαρμογή των διατάξεων του ν.2518/1997) νοείται το προσωπικό εκείνο, στο οποίο ανατίθεται η άσκηση οποιασδήποτε από τις προβλεπόμενες, στο άρθρο 1 παρ.1 ν.2518/1997 δραστηριότητες (π.χ. επιτήρηση ή φύλαξη κινητών ή ακινήτων περιουσιακών αγαθών και εγκαταστάσεων) ή το οποίο παρέχει οποιαδήποτε άλλη εργασία υποστήριξης των δραστηριοτήτων αυτών.","options":["προσωπικό ασφαλείας","προσωπικό υπηρεσίας","προσωπικό ασφάλισης","προσωπικό επιφυλακής"],"correct":0,"summary":""},{"id":"Α12","question":"Σε ποιες περιπτώσεις υποχρεούνται οι Ιδιωτικές Επιχειρήσεις Παροχής Υπηρεσιών Ασφαλείας (Ι.Ε.Π.Υ.Α.) και το προσωπικό τους να παρέχουν τη συνδρομή τους στην αρμόδια αστυνομική Αρχή;","options":["Στην αντιμετώπιση δημοσίων συναθροίσεων, όπως πορείες και διαδηλώσεις.","Δεν έχουν καμία υποχρέωση να παρέχουν τη συνδρομή τους στις αστυνομικές Αρχές.","Σε περίπτωση εκδήλωσης εγκληματικής ενέργειας, εφόσον τους ζητηθεί.","Σε περίπτωση εκδήλωσης εγκληματικής ενέργειας και στην αντιμετώπιση δημοσίων συναθροίσεων, όπως πορείες και διαδηλώσεις.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α13","question":"Σε ποιες περιπτώσεις απαιτείται το Προσωπικό Ιδιωτικής Ασφάλειας να κατέχει άδεια εργασίας Β' κατηγορίας (άρθρο 3 παρ.3 ν.2518/1997);","options":["Για υπηρεσίες εγκατάστασης, συντήρησης και παρακολούθησης λειτουργίας μηχανημάτων και συστημάτων ασφαλείας και συναγερμού, πλην αυτών που τοποθετούνται σε αυτοκίνητα.","Για υπηρεσίες επιτήρησης ή φύλαξης κινητών και ακίνητων περιουσιακών αγαθών και εγκαταστάσεων.","Για υπηρεσίες προστασίας φυσικών προσώπων.","Για υπηρεσίες ασφαλούς μεταφοράς χρημάτων, αξιών, αρχαιοτήτων, έργων τέχνης και πολύτιμων αντικειμένων.","Όλα τα παραπάνω."],"correct":0,"summary":""},{"id":"Α14","question":"Ποιες είναι ορισμένες από τις προϋποθέσεις που πρέπει να συντρέχουν στο πρόσωπο του ενδιαφερόμενου για την κτήση αδείας εργασίας ως Προσωπικό Ιδιωτικής Ασφάλειας, σύμφωνα με τον ν.2518/1997, όπως τροποποιήθηκε με τον ν.3707/2008;","options":["Πρέπει μεταξύ άλλων να είναι αποκλειστικά Έλληνας πολίτης, να μην συντρέχει κώλυμα δημόσιας τάξης ή δημόσιας ασφάλειας ή δημόσιας υγείας για αυτόν, να έχει συμπληρώσει το 21ο έτος της ηλικίας του και να μην τελεί υπό δικαστική συμπαράσταση.","Πρέπει μεταξύ άλλων να είναι Έλληνας πολίτης ή ομογενής ή πολίτης χώρας - μέλους της Ευρωπαϊκής Ένωσης, να μην συντρέχει κώλυμα δημόσιας τάξης ή δημόσιας ασφάλειας ή δημόσιας υγείας και να έχει συμπληρώσει το 18ο έτος της ηλικίας του.","Πρέπει μεταξύ άλλων να είναι αποκλειστικά Έλληνας πολίτης, να μην συντρέχει κώλυμα δημόσιας τάξης ή δημόσιας ασφάλειας ή δημόσιας υγείας για αυτόν, ανεξαρτήτως ηλικίας και να τελεί υπό δικαστική συμπαράσταση.","Πρέπει μεταξύ άλλων να είναι αποκλειστικά Έλληνας πολίτης, να μην συντρέχει κώλυμα δημόσιας τάξης ή δημόσιας ασφάλειας ή δημόσιας υγείας για αυτόν και να είναι τουλάχιστον 30 ετών.","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α15","question":"Ποια στοιχεία αναγράφονται στο ειδικό διακριτικό σήμα (κονκάρδα) του Προσωπικού Ιδιωτικής Ασφάλειας;","options":["Η επωνυμία της επιχείρησης, το ονοματεπώνυμο του δικαιούχου, το αρκτικόλεξο Ι.Ε.Π.Υ.Α. (Ιδιωτική Επιχείρηση Παροχής Υπηρεσιών Ασφαλείας) και στην αγγλική γλώσσα η ένδειξη «PRIVATE SECURITY».","Είναι ίδιο με το ειδικό διακριτικό σήμα του προσωπικού των Σωμάτων Ασφαλείας.","Η επωνυμία της επιχείρησης, το ονοματεπώνυμο του δικαιούχου, το αρκτικόλεξο Ι.Ε.Π.Υ.Α. (Ιδιωτική Επιχείρηση Παροχής Υπηρεσιών Ασφαλείας) και στην αγγλική γλώσσα την ένδειξη «PRIVATE POLICE».","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α16","question":"Σε ποιες περιπτώσεις απαιτείται το Προσωπικό Ιδιωτικής Ασφάλειας να κατέχει άδεια εργασίας Α' κατηγορίας (άρθρο 3 παρ.2 ν.2518/1997);","options":["Για υπηρεσίες ασφαλείας από ένοπλους ιδιώτες φρουρούς σε υπό ελληνική σημαία πολεμικά πλοία για την προστασία από επιθέσεις που συνιστούν πειρατεία.","Για υπηρεσίες εγκατάστασης, συντήρησης και παρακολούθησης λειτουργίας μηχανημάτων και συστημάτων ασφαλείας και συναγερμού, πλην αυτών που τοποθετούνται σε αυτοκίνητα.","Για υπηρεσίες εκπόνησης μελετών και σχεδιασμού συστημάτων ασφαλείας και συστημάτων συναγερμού.","Για υπηρεσίες επιτήρησης ή φύλαξης κινητών και ακίνητων περιουσιακών αγαθών και εγκαταστάσεων, προστασίας φυσικών προσώπων, ασφαλούς μεταφοράς χρημάτων, αξιών, αρχαιοτήτων, έργων τέχνης και πολύτιμων αντικειμένων, προστασία θεαμάτων, εκθέσεων, συνεδρίων, διαγωνισμών και αθλητικών εκδηλώσεων, έλεγχο ασφάλειας πληρωμάτων, επιβατών, χειραποσκευών, αποσκευών, φορτίου και ταχυδρομικού υλικού σε αερολιμένες και λιμένες.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α17","question":"Το Προσωπικό Ιδιωτικής Ασφάλειας το οποίο απασχολείται σε Κέντρα Λήψης Σημάτων, απαιτείται να κατέχει:","options":["Άδεια εργασίας είτε Α είτε Β κατηγορίας.","Απαραιτήτως άδεια εργασίας Β κατηγορίας.","Απαραιτήτως άδεια εργασίας Α κατηγορίας.","Άδεια εργασίας Γ κατηγορίας Κέντρων Λήψης Σημάτων.","Όλα τα παραπάνω."],"correct":0,"summary":""},{"id":"Α18","question":"Σε ποιες περιπτώσεις απαγορεύεται οι Ιδιωτικές Επιχειρήσεις Παροχής Υπηρεσιών Ασφαλείας (Ι.Ε.Π.Υ.Α.) και το προσωπικό τους να παρέχουν τη συνδρομή τους στις αστυνομικές Αρχές;","options":["Σε περίπτωση εκδήλωσης εγκληματικής ενέργειας.","Για την αντιμετώπιση δημοσίων συναθροίσεων, όπως πορείες και διαδηλώσεις.","Σε περίπτωση εκδήλωσης εγκληματικής ενέργειας και για την αντιμετώπιση δημοσίων συναθροίσεων, όπως πορείες και διαδηλώσεις.","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α19","question":"Ποια είναι μία από τις υποχρεώσεις που έχει το Προσωπικό Ιδιωτικής Ασφάλειας, ώστε να διαχωρίζεται σαφώς από τη δημόσια αστυνομική δύναμη;","options":["Να χρησιμοποιεί τον τίτλο «ιδιωτικός ντετέκτιβ».","Να χρησιμοποιεί τον τίτλο «ιδιωτικός αστυνομικός».","Να μην χρησιμοποιεί, τον τίτλο «αστυνομικός» ή λέξεις ή φράσεις ικανές να παραπλανήσουν το κοινό ότι αντιπροσωπεύει δημόσια Αρχή και ιδιαίτερα αστυνομική.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α20","question":"Πώς οφείλει να συμπεριφέρεται το Προσωπικό Ιδιωτικής Ασφάλειας κατά την εκτέλεση των καθηκόντων του;","options":["Να βρίσκεται σε ετοιμότητα και να εκτελεί τα καθήκοντά του με επαγγελματισμό, χωρίς να υπερβαίνει τα επιτρεπόμενα όρια της διακριτικής ευχέρειας.","Να απαντά σε οποιαδήποτε εξύβριση ή λεκτική πρόκληση με ανάλογο τρόπο.","Να προσεγγίζει τους πολίτες με ψυχρότητα και αυστηρότητα, ώστε να εμπνέει σιγουριά και ασφάλεια.","Να εκτελεί οποιαδήποτε εντολή των προϊσταμένων του, ακόμη και παράνομη και κατόπιν να υποβάλει αναφορά.","Όλα τα παραπάνω."],"correct":0,"summary":""},{"id":"Α21","question":"Ποιο είναι το Δευτεροβάθμιο Συνδικαλιστικό όργανο των εργαζομένων στον κλάδο της Ιδιωτικής Ασφάλειας:","options":["Ενιαίος Φορέας Κοινωνικής Ασφάλισης (Ε.Φ.Κ.Α.).","Εργατικό Κέντρο Αθήνας (E.K.A.).","Ομοσπονδία Υπαλλήλων Προσωπικού Ασφαλείας Ελλάδας (ΟΜ.Υ.Π.Α.Ε.).","Ανώτατη Διοίκηση Ενώσεων Δημοσίων Υπαλλήλων (Α.Δ.Ε.Δ.Υ.)"],"correct":2,"summary":""},{"id":"Α22","question":"Ποιες είναι ορισμένες αρμοδιότητες της Δευτεροβάθμιας Συνδικαλιστικής οργάνωσης - Ομοσπονδίας Υπαλλήλων Προσωπικού Ασφαλείας Ελλάδας (ΟΜ.Υ.Π.Α.Ε.)","options":["Υπογραφή κλαδικών συμβάσεων.","Διασφάλιση εργασιακών δικαιωμάτων.","Εκπροσώπηση εργαζομένων σε επιθεωρήσεις και Δικαστικές Διαδικασίες.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α23","question":"Ποιος μπορεί να είναι μέλος της Ομοσπονδίας Υπαλλήλων Προσωπικού Ασφαλείας Ελλάδας (ΟΜ.Υ.Π.Α.Ε.);","options":["Όσοι απασχολούνται σε Ιδιωτικές Επιχειρήσεις Παροχής Υπηρεσιών Ασφαλείας (Ι.Ε.Π.Υ.Α.) και είναι εγγεγραμένοι σε πρωτοβάθμια σωματεία.","Όλοι οι εργαζόμενοι στον δημόσιο τομέα.","Όλοι οι εργαζόμενοι στα Σώματα Ασφαλείας.","Όλοι οι εργαζόμενοι στις Ένοπλες Δυνάμεις."],"correct":0,"summary":""},{"id":"Α24","question":"Ποια από τα παρακάτω αποτελούν βασικούς παράγοντες ενός συστήματος επικοινωνίας;","options":["Πομπός.","Μήνυμα.","Μέσο.","Θόρυβος.","Δέκτης.","Όλα τα παραπάνω."],"correct":5,"summary":""},{"id":"Α25","question":"Η μη λεκτική επικοινωνία μπορεί να περιλαμβάνει:","options":["Εκφράσεις του προσώπου.","Γραπτό σύντομο κείμενο, όχι πολλών λέξεων.","Προφορική συζήτηση πολλών ατόμων (ομάδων).","Προφορική συζήτηση μέχρι δύο άτομα.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α26","question":"Το θετικό νεύμα συνήθως δείχνει:","options":["Αβεβαιότητα.","Απορία.","Συμφωνία.","Διαφωνία.","Θλίψη."],"correct":2,"summary":""},{"id":"Α27","question":"Αν απαιτείται να συνομιλήσουμε με κάποιον που κάθεται σε αναπηρικό καροτσάκι:","options":["Στεκόμαστε όρθιοι από τη δεξιά πλευρά.","Κρατάμε πολύ μεγάλη απόσταση.","Ωθούμε το καροτσάκι, για να περπατάμε ταυτόχρονα.","Γονατίζουμε, για να είμαστε στο ίδιο ύψος με αυτόν.","Κανένα από τα παραπάνω."],"correct":3,"summary":""},{"id":"Α28","question":"Αν κάποιος έχει προβλήματα όρασης και μας ζητήσει βοήθεια:","options":["Αποφεύγουμε να τον βοηθήσουμε.","Αφήνουμε εκείνον να μας πιάσει από τον ώμο.","Τον σπρώχνουμε από το πίσω μέρος της μπλούζας του.","Για να περάσει η ώρα, σχολιάζουμε τα ρούχα που φοράνε οι άλλοι, ούτως ή άλλως δεν μπορεί να τα δει.","Όλα τα παραπάνω."],"correct":1,"summary":""},{"id":"Α29","question":"Για να υπάρξει επικοινωνία είναι απαραίτητη η αποτελεσματική ανταλλαγή πληροφοριών. Πώς ολοκληρώνεται η ανταλλαγή αυτή;","options":["Με την παραποίηση του μηνύματος.","Με την εξάλειψη εξωτερικών παραγόντων, όπως ο θόρυβος.","Με τη διαγραφή ενός μηνύματος.","Με την κατανόηση του μηνύματος.","Κανένα από τα παραπάνω."],"correct":3,"summary":""},{"id":"Α30","question":"Το μετατραυματικό στρες είναι:","options":["Το στρες που εμφανίζεται μετά από σωματικό τραυματισμό.","Το στρες που εμφανίζεται μετά από ένα κρίσιμο συμβάν.","Δεν πρόκειται να εμφανιστεί ποτέ.","Τελειώνει γρήγορα."],"correct":1,"summary":""},{"id":"Α31","question":"Ως __________ χαρακτηρίζεται ο θάνατος ή η ανικανότητα του ασφαλισμένου για εργασία που προκλήθηκε από ένα βίαιο περιστατικό που έγινε κατά την εκτέλεση της εργασίας ή εξαιτίας αυτής (και κατά τη μετάβαση του εργαζόμενου στον τόπο της εργασίας ή κατά την επιστροφή στο σπίτι του).","options":["εργατικό ατύχημα","θάνατος","επαγγελματικός κίνδυνος","τροχαίο ατύχημα"],"correct":0,"summary":""},{"id":"Α32","question":"Για να μην μολυνθούμε με αερογενώς μεταδιδόμενο νόσημα:","options":["Πρέπει να φοράμε μάσκα.","Πρέπει να απορρίπτουμε τα γάντια, χωρίς να ακουμπάμε την εξωτερική επιφάνεια τους.","Να βάζουμε αντισηπτικό, όταν πιάνουμε αντικείμενα και επιφάνειες.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α33","question":"Αιματογενώς μεταδιδόμενα νοσήματα είναι:","options":["Γρίπη.","COVID 19.","Ηπατίτιδα Β.","Γαστρεντερίτιδα."],"correct":2,"summary":""},{"id":"Α34","question":"Οι εργαζόμενοι και οι εκπρόσωποί τους για τα θέματα Υγείας και Ασφάλειας στην Εργασία:","options":["Έχουν δικαίωμα να προτείνουν νέα μέτρα Υγείας και Ασφάλειας στην Εργασία και να εκφράσουν την άποψή τους για τα υφιστάμενα μέτρα, καθώς και να ερευνούν καταγγελίες των εργαζομένων για θέματα Υγείας και Ασφάλειας στην Εργασία.","Δεν έχουν δικαίωμα να γνωμοδοτούν σχετικά με τον σχεδιασμό και την οργάνωση της εκπαίδευσής τους σε θέματα Υγείας και Ασφάλειας στην Εργασία.","Δεν έχουν δικαίωμα να υποβάλλουν τις δικές τους παρατηρήσεις κατά τη διάρκεια των επισκέψεων ελέγχου από την αρμόδια αρχή.","Όλα τα παραπάνω.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α35","question":"Τι ρυθμίζει το δίκαιο;","options":["Την οικογενειακή ζωή.","Τις φορολογικές υποχρεώσεις.","Τις εργασιακές σχέσεις.","Τις σχέσεις κράτους και πολιτών.","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α36","question":"Αυτοψία μπορεί να γίνει:","options":["Σε χώρο.","Σε αντικείμενο.","Σε άνθρωπο.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α37","question":"Ο δράστης που καταλαμβάνεται τη στιγμή του εγκλήματος:","options":["Τελεί αυτόφωρο αδίκημα.","Τελεί διαρκές αδίκημα.","Τελεί αδιάφορο αδίκημα.","Τελεί σε σύγχυση."],"correct":0,"summary":""},{"id":"Α38","question":"Το έγκλημα πρέπει να προβλέπεται σε νόμο:","options":["Εθιμικό.","Γραπτό.","Άγραφο.","Προφορικό."],"correct":1,"summary":""},{"id":"Α39","question":"Ο νόμος περί όπλων είναι:","options":["Έθιμο.","Αστική αξίωση.","Ποινή.","Ειδικός Ποινικός Νόμος."],"correct":3,"summary":""},{"id":"Α40","question":"Η άμυνα:","options":["Δεν είναι άδικη πράξη σε περίπτωση υπεράσπισης του εαυτού του αμυνόμενου.","Είναι παράνομη ενέργεια.","Είναι επιθετική συμπεριφορά.","Είναι ηθικά επιλήψιμη πράξη."],"correct":0,"summary":""},{"id":"Α41","question":"Ποια από τα παρακάτω περιλαμβάνονται στην έννοια του όπλου;","options":["Τα πυροβόλα όπλα.","Οι μηχανισμοί εκκένωσης ηλεκτρικής ενέργειας (teaser).","Τα ρόπαλα.","Τα μαχαίρια.","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α42","question":"Άδεια οπλοφορίας (ν.2168/1993) χορηγείται:","options":["Από την αρμόδια αστυνομική Αρχή.","Από την αρμόδια δημοτική Αρχή.","Από την αρμόδια λιμενική Αρχή.","Από την αρμόδια πυροσβεστική Αρχή."],"correct":0,"summary":""},{"id":"Α43","question":"Άδεια οπλοφορίας (ν.2168/1993) χορηγείται:","options":["Σε οποιοδήποτε φυσικό ή νομικό πρόσωπο.","Σε ενηλίκους άνω των 18 ετών.","Μόνο σε άνδρες.","Μόνο σε γυναίκες."],"correct":1,"summary":""},{"id":"Α44","question":"Έχει το Προσωπικό Ιδιωτικής Ασφάλειας δικαίωμα διενέργειας σωματικής έρευνας σε πρόσωπο που εισέρχεται σε δημόσιο Νοσοκομείο, στο οποίο παρέχει υπηρεσίες φύλαξης;","options":["Ναι.","Όχι.","Υπό προϋποθέσεις.","Ναι, αν το κρίνει αναγκαίο."],"correct":1,"summary":""},{"id":"Α45","question":"Η έρευνα σε κατοικία τη νύχτα διενεργείται υποχρεωτικά από:","options":["Δικαστικό λειτουργό.","Δημοτικό Αστυνομικό.","Προσωπικό Ασφαλείας.","Γείτονα."],"correct":0,"summary":""},{"id":"Α46","question":"Έγκληση μπορεί να υποβληθεί:","options":["Μόνο από τον δημοτικό αστυνομικό.","Μόνο από το προσωπικό ασφαλείας.","Μόνο από το θύμα.","Μόνο από τον θύτη."],"correct":2,"summary":""},{"id":"Α47","question":"Ο Α την 2/2/22 και ώρα 15:30΄ διέπραξε σε βάρος του Β το αδίκημα της κλοπής (372 Π.Κ.), αφαιρώντας του το χρηματικό ποσό των 500 ευρώ. Ο Β υπέβαλε απευθείας έγκληση σε βάρος του Α. Πότε λήγει το αυτόφωρο (242 Κ.Π.Δ.);","options":["Μετά από 24 ώρες (15:30΄ της 3/2/22)","Μετά από 48 ώρες (15:30΄ της 4/2/22)","Τα μεσάνυχτα της ίδιας ημέρας (23:59΄ της 2/2/22)","Τα μεσάνυχτα της επόμενης ημέρας (23:59΄ της 3/2/22)"],"correct":3,"summary":""},{"id":"Α48","question":"Το Προσωπικό Ιδιωτικής Ασφαλείας που προβαίνει σε έλεγχο οχήματος, παριστάνοντας τον αστυνομικό διαπράττει το αδίκημα της:","options":["Φθοράς ξένης ιδιοκτησίας.","Επικίνδυνης σωματικής βλάβης.","Αυτοδικίας.","Αντιποίησης."],"correct":3,"summary":""},{"id":"Α49","question":"Η παραποίηση ή νόθευση μεταλλικού νομίσματος ή χαρτονομίσματος οποιουδήποτε κράτους συνιστά το αδίκημα της:","options":["Κλοπής.","Υπεξαίρεσης.","Εκβίασης.","Παραχάραξης νομίσματος και άλλων μέσων πληρωμής."],"correct":3,"summary":""},{"id":"Α50","question":"Η κατάθεση πλαστού χαρτονομίσματος των 50 ευρώ σε Αυτόματη Ταμειολογική Μηχανή (Α.Τ.Μ.) Τράπεζας συνιστά το αδίκημα της:","options":["Κλοπής.","Απάτης.","Κυκλοφορίας πλαστών νομισμάτων.","Απιστίας."],"correct":2,"summary":""},{"id":"Α51","question":"Η κατάληψη δράστη με μεγάλη ποσότητα εκρηκτικών υλών στην τσάντα του:","options":["Τιμωρείται ως κακούργημα.","Τιμωρείται με θανατική ποινή.","Δεν τιμωρείται.","Επιβάλλεται διοικητικό πρόστιμο."],"correct":0,"summary":""},{"id":"Α52","question":"Οι φράσεις «θα σε σπάσω στο ξύλο», «θα σου κάψω το σπίτι», «θα σε σκοτώσω» συνιστούν το αδίκημα της:","options":["Συκοφαντικής δυσφήμησης.","Εκβίασης.","Απειλής.","Αυτοδικίας."],"correct":2,"summary":""},{"id":"Α53","question":"Άνδρας που εισέρχεται ένοπλος σε τράπεζα, ζητώντας από τον ταμία να του παραδώσει τα χρήματα, διαπράττει το αδίκημα της:","options":["Κλοπής.","Απάτης.","Ληστείας.","Υπεξαίρεσης."],"correct":2,"summary":""},{"id":"Α54","question":"Το προσωπικό ασφαλείας των Ιδιωτικών Επιχειρήσεων Παροχής Υπηρεσιών Ασφαλείας (Ι.Ε.Π.Υ.Α.), εφόσον φέρει νόμιμα όπλο επιτρέπεται να το φέρει (ν.2518/1997):","options":["Κατά τη διάρκεια άσκησης των καθηκόντων του.","Όλη την ημέρα.","Πριν την ανάληψη των καθηκόντων του.","Μετά την ανάληψη των καθηκόντων του."],"correct":0,"summary":""},{"id":"Α55","question":"Σε περίπτωση ληστείας (άρθρο 380 Π.Κ.) σε τράπεζα το Προσωπικό Ιδιωτικής Ασφάλειας:","options":["Έχει υποχρέωση να συλλάβει τους δράστες, όπως και κάθε πολίτης.","Έχει υποχρέωση να απέχει από κάθε ενέργεια.","Έχει δικαίωμα να συλλάβει τους δράστες.","Έχει δικαίωμα να υποβάλει έγκληση."],"correct":2,"summary":""},{"id":"Α56","question":"Σε περίπτωση κλοπής (άρθρο 372 Π.Κ.) χρηματικού ποσού από το ταμείο καταστήματος που γίνεται αντιληπτή τη στιγμή εκείνη, ποιος έχει δικαίωμα να συλλάβει τον δράστη (άρθρο 275 Κ.Π.Δ.);","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας.","Ο νόμιμος εκπρόσωπος της επιχείρησης.","Πελάτης του καταστήματος.","Όλα τα παραπάνω πρόσωπα."],"correct":3,"summary":""},{"id":"Α57","question":"Το Προσωπικό Ιδιωτικής Ασφάλειας σπάει την κλειδαριά πόρτας, προκειμένου να διαφύγει κόσμος από κτήριο που έχει εκδηλωθεί μεγάλη πυρκαγιά και δεν υπάρχει άλλος τρόπος διαφυγής. Είναι τελικά άδικη η φθορά ξένης ιδιοκτησίας (άρθρο 378 Π.Κ.) που έχει τελεστεί;","options":["Ναι.","Όχι, διότι βρίσκεται σε άμυνα.","Όχι, διότι βρίσκεται σε πανικό.","Όχι, διότι υφίσταται κατάσταση ανάγκης (άρθρο 25 Π.Κ.)"],"correct":3,"summary":""},{"id":"Α58","question":"Για να ασκηθεί ποινική δίωξη για κλοπή αντικειμένου μικρής αξίας (άρθρο 377 Π.Κ.) από πολυκατάστημα πρέπει να υποβάλει __________ ο κατά το νόμο αρμόδιος (άρθρο 381 Π.Κ.).","options":["αίτηση","έγκληση","έγγραφο","αναφορά"],"correct":1,"summary":""},{"id":"Α59","question":"Η άρνηση πολίτη για υποβολή σε νόμιμο έλεγχο από τα αστυνομικά όργανα συνιστά το αδίκημα της:","options":["Αυτοδικίας.","Εξύβρισης.","Απείθειας.","Δυσφήμισης."],"correct":2,"summary":""},{"id":"Α60","question":"Αυτός που αφαιρεί ξένο αντικείμενο με σωματική βία ή με απειλές ενωμένες με επικείμενο κίνδυνο σώματος ή ζωής, διαπράττει το αδίκημα της:","options":["Κλοπής.","Εκβίασης.","Ληστείας.","Υπεξαίρεσης."],"correct":2,"summary":""},{"id":"Α61","question":"Τα όπλα και τα φυσίγγια του προσωπικού ασφαλείας των Ιδιωτικών Επιχειρήσεων Παροχής Υπηρεσιών Ασφαλείας (Ι.Ε.Π.Υ.Α.) που τα φέρει νόμιμα, φυλάσσονται (ν.2518/1997):","options":["Στο σπίτι του.","Στην έδρα της επιχείρησης που το απασχολεί, σε ειδικούς χώρους.","Σε εξωτερικό χώρο.","Όπου κρίνει το προσωπικό ότι είναι περισσότερο ασφαλή."],"correct":1,"summary":""},{"id":"Α62","question":"Ποιες ημέρες και ώρες διαπράττονται, συνήθως, οι διαρρήξεις σε καταστήματα και επαγγελματικούς χώρους;","options":["Κατά τη διάρκεια της νύκτας, τις περιόδους των εορτών, τις αργίες ή τα Σαββατοκύριακα όπου οι χώροι αυτοί παραμένουν κλειστοί.","Κατά τις εργάσιμες ημέρες, εν ώρα λειτουργίας των χώρων αυτών.","Δεν διαπράττονται διαρρήξεις.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α63","question":"Για περιστατικό κλοπής σε λιμένα σε ποια αρμόδια δημόσια Αρχή θα καλέσει το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Τη Δημοτική Αστυνομία.","Το Πυροσβεστικό Σώμα.","Το Λιμενικό Σώμα - Ελληνική Ακτοφυλακή.","Την Ελληνική Αστυνομία."],"correct":2,"summary":""},{"id":"Α64","question":"Ποια από τις παρακάτω έννοιες αναφέρεται στην προστασία των εγκαταστάσεων, των λειτουργιών και των ανθρώπων της, από τις κακόβουλες ανθρωπογενείς απειλές που αντιμετωπίζει;","options":["Κίνδυνος.","Απειλή.","Τρωτότητα.","Ασφάλεια (Safety).","Ασφάλεια (Security)."],"correct":4,"summary":""},{"id":"Α65","question":"Ποια από τις παρακάτω έννοιες αναφέρεται στην προστασία των εγκαταστάσεων, των λειτουργιών και των ανθρώπων της από τους φυσικούς, τεχνολογικούς και λοιπούς κινδύνους (ατυχήματα);","options":["Κίνδυνος.","Απειλή.","Τρωτότητα.","Ασφάλεια (Safety).","Ασφάλεια (Security)."],"correct":3,"summary":""},{"id":"Α66","question":"Σε ποιους τηλεφωνικούς αριθμούς το Προσωπικό Ιδιωτικής Ασφάλειας, θα πρέπει να έχει άμεση πρόσβαση κατά την εκτέλεση της υπηρεσίας του;","options":["Του τοπικού Αστυνομικού Τμήματος και της τοπικής Πυροσβεστικής Υπηρεσίας.","Του άμεσου προϊσταμένου του (Επόπτης ή Αρχιφύλακας).","Του υπευθύνου του χώρου στον οποίο παρέχει υπηρεσίες ασφαλείας.","Της εταιρείας εγκατάστασης και επισκευής συστημάτων ασφαλείας και συναγερμού.","Όλα τα παραπάνω"],"correct":4,"summary":""},{"id":"Α67","question":"Κατά την ανάληψη της υπηρεσίας το Προσωπικό Ιδιωτικής Ασφάλειας που παραλαμβάνει το ραδιοτηλέφωνο (ασύρματο) πρέπει:","options":["Να γνωρίζει να το χρησιμοποιεί.","Να ελέγχει τη λειτουργικότητά του.","Να ελέγχει αν είναι φορτισμένη η μπαταρία.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α68","question":"Η σφυρίχτρα, ως προσωπικός εξοπλισμός του Προσωπικού Ιδιωτικής Ασφάλειας, είναι ένα μέσο:","options":["Για άμεση ειδοποίηση των συναδέλφών του που εκτελούν παράλληλα υπηρεσία κοντά σε αυτόν που καλεί, σε περίπτωση κινδύνου.","Για τη διάλυση πλήθους σε δημόσιες συναθροίσεις.","Για να εκπαιδεύει τον σκύλο περιπολίας.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α69","question":"Τα σχέδια έκτακτης ανάγκης καθορίζουν τα μέτρα που λαμβάνονται σε έκτακτες καταστάσεις, όπως:","options":["Πυρκαγιές.","Εκκένωση κτηρίων.","Χημικά, βιολογικά, ραδιολογικά και πυρηνικά (Χ.Β.Ρ.Π.) περιστατικά.","Προειδοποίηση για ύπαρξη βόμβας.","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α70","question":"Μία σοβαρή ένδειξη κινδύνου κατά τον έλεγχο ενός ατόμου είναι:","options":["Τα κρυμμένα χέρια πίσω από την πλάτη του ή μέσα στις τσέπες του, καθώς και οι κινήσεις των χεριών του προς το εσωτερικό των ρούχων του.","Η συνεργάσιμη στάση του ατόμου.","Η σταθερότητα στις κινήσεις του.","Η ηρεμία του ατόμου.","Όλα τα παραπάνω."],"correct":0,"summary":""},{"id":"Α71","question":"Ορισμένα από τα ηλεκτρονικά συστήματα ασφαλείας είναι:","options":["Το σύστημα συναγερμού.","Το σύστημα κλειστού κυκλώματος τηλεόρασης (CCTV).","Το σύστημα πυρανίχνευσης.","Το σύστημα ελέγχου πρόσβασης.","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α72","question":"Οι σειρήνες πυρανίχνευσης προειδοποιούν:","options":["Οπτικά, για αυθαίρετη είσοδο εισβολέα (ατόμου) στον χώρο.","Οπτικά, για την ανίχνευση πυρκαγιάς και υγρασίας στον χώρο.","Ηχητικά και οπτικά, για ανίχνευση πυρκαγιάς στον χώρο.","Ηχητικά, για αυθαίρετη είσοδο εισβολέα (ατόμου) στον χώρο.","Ηχητικά και οπτικά, για αυθαίρετη είσοδο εισβολέα (ατόμου) στον χώρο."],"correct":2,"summary":""},{"id":"Α73","question":"Το Προσωπικό Ιδιωτικής Ασφάλειας κατά την προσέγγιση ενός ατόμου, θα πρέπει να αποφέυγει:","options":["Να είναι έτοιμο να αντιδράσει άμεσα.","Να δίνει προσοχή στα χέρια του ατόμου.","Να παρατηρεί το άτομο, πριν το προσεγγίσει.","Να στρέφει την πλάτη στο άτομο."],"correct":3,"summary":""},{"id":"Α74","question":"Ο εξοπλισμός των ατομικών προστατευτικών μέσων, ιδίως περιλαμβάνει:","options":["Κράνος, γυαλιά, μάσκα, αυτόνομη αναπνευστική συσκευή, προστατευτικά ακοής ή ωτοασπίδες, γάντια, υποδήματα ασφαλείας, προστατευτική φόρμα.","Αυτόνομη αναπνευστική συσκευή, προστατευτικά ακοής ή ωτοασπίδες, στυλό, σημειωματάριο.","Προστατευτικά ακοής ή ωτοασπίδες, στυλό, σημειωματάριο, ηλεκτρονικό υπολογιστή.","Στυλό, σημειωματάριο, ηλεκτρονικό υπολογιστή, κλειδοθήκη."],"correct":0,"summary":""},{"id":"Α75","question":"Το αλεξίσφαιρο γιλέκο του Προσωπικού Ιδιωτικής Ασφάλειας, σύμφωνα με την ισχύουσα νομοθεσία είναι:","options":["Εσωτερικού τύπου.","Εξωτερικού τύπου.","Εσωτερικού ή εξωτερικού τύπου.","Εσωτερικού τύπου με σκληρό αντιβαλλιστικό υλικό."],"correct":1,"summary":""},{"id":"Α76","question":"Ποιοι είναι ορισμένοι χρυσοί κανόνες ασφαλείας, για την επιλογή κατάλληλης θέσης, από το Προσωπικό Ιδιωτικής Ασφάλειας, κατά την προσέγγιση ενός ατόμου;","options":["Η χρήση συσκευής ηλεκτρικής εκκένωσης.","Η χρήση σπρέι πιπεριού.","Η κάλυψη και η απόσταση.","Όλα τα παραπάνω."],"correct":2,"summary":""},{"id":"Α77","question":"Ο διάλογος του Προσωπικού Ιδιωτικής Ασφάλειας με ένα άτομο πρέπει να εστιάζει:","options":["Στον σκοπό για τον οποίο πραγματοποιείται ο διάλογος.","Σε προσωπικά ζητήματα.","Σε κοινωνικά ζητήματα.","Όλα τα παραπάνω."],"correct":0,"summary":""},{"id":"Α78","question":"Ο κύριος στόχος του Προσωπικού Ιδιωτικής Ασφάλειας στον έλεγχο ενός ατόμου, πρέπει να εστιάζει:","options":["Στην καταστολή με χρήση βίας.","Στην ομαλή ολοκλήρωση του ελέγχου.","Στην αποφυγή του ελέγχου.","Όλα τα παραπάνω."],"correct":1,"summary":""},{"id":"Α79","question":"Σε περίπτωση ελέγχου ύποπτου ατόμου, που διενεργείται από δύο (2) υπαλλήλους Προσωπικού Ιδιωτικής Ασφάλειας, ποια είναι η κατάλληλη γωνία μεταξύ αυτών και του υπόπτου, κατά τη διενέργεια του ελέγχου;","options":["Οξεία γωνία (45ο μοίρες).","Ορθή γωνία (90ο μοίρες).","Αμβλεία γωνία (120ο μοίρες).","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α80","question":"Ποια είναι τα χαρακτηριστικά ενός ατόμου, τα οποία παρατηρεί το Προσωπικό Ιδιωτικής Ασφάλειας, που δεν αλλοιώνονται άμεσα;","options":["Ύψος, χρώμα επιδερμίδας και σημάδια.","Ένδυση και υπόδηση.","Μαλλιά.","Όλα τα παραπάνω."],"correct":0,"summary":""},{"id":"Α81","question":"Ποια είναι τα χαρακτηριστικά ενός ατόμου, τα οποία παρατηρεί το Προσωπικό Ιδιωτικής Ασφάλειας και αλλοιώνονται άμεσα;","options":["Σωματική διάπλαση.","Χρώμα επιδερμίδας και σημάδια.","Ένδυση, υπόδηση, ρολόγια και δαχτυλίδια.","Όλα τα παραπάνω."],"correct":2,"summary":""},{"id":"Α82","question":"Ποια είναι τα ύποπτα σημάδια σε ένα όχημα τα οποία πρέπει να αναγνωρίζει άμεσα το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Υπερβολικό βάρος που εντοπίζεται, κυρίως, λόγω της κλίσης στο πίσω μέρος του οχήματος και της καθίζησης των πίσω ελαστικών.","Αυτοσχέδια πινακίδα κυκλοφορίας.","Κομμένα καλώδια που προεξέχουν γύρω από το ταμπλό ή το τιμόνι.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α83","question":"Η διαχείριση πλήθους από το Προσωπικό Ιδιωτικής Ασφαλείας:","options":["Αποτελεί, κατά βάση, προληπτική δραστηριότητα που στοχεύει στην ευταξία μιας εκδήλωσης.","Γίνεται μόνο, όταν το πλήθος είναι εξαγριωμένο.","Δεν είναι έλεγχος.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α84","question":"Σε ποια ερωτήματα πρέπει να απαντά με σαφήνεια και συνέπεια στις αναφορές που συντάσσει το Προσωπικό Ιδιωτικής Ασφάλειας:","options":["Τι μέτρα δεν ελήφθησαν ή ποιες ενέργειες δεν εκδηλώθηκαν από μέρος του;","Τι συνέβη; Ποιες είναι οι προσωπικές αξιολογικές κρίσεις και απόψεις του Προσωπικού Ιδιωτικής Ασφάλειας;","Τι συνέβη; Τι μέτρα ελήφθησαν ή ποιες ενέργειες εκδηλώθηκαν από μέρος του;","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α85","question":"Η __________, ως ανθρώπινη ικανότητα, είναι η προσεκτική θέαση οποιουδήποτε ανθρώπου, αντικειμένου, γεγονότος ή συμβάντος και η κατανόηση της σημασίας τους.","options":["αναφορά","αντίληψη","λογική","παρατήρηση"],"correct":3,"summary":""},{"id":"Α86","question":"Τι ρόλο διαδραματίζουν οι ικανότητες παρατηρητικότητας και περιγραφής στην εκτέλεση των καθηκόντων του Προσωπικού Ιδιωτικής Ασφάλειας;","options":["Είναι από τις κυριότερες ικανότητες και αναπτύσσονται με την εκπαίδευση και την εμπειρία.","Είναι από τις κυριότερες ικανότητες, ωστόσο είναι έμφυτες και δεν μπορούν να βελτιωθούν.","Δεν συμβάλλουν ουσιαστικά στην εκτέλεση των καθηκόντων του.","Όλα τα παραπάνω."],"correct":0,"summary":""},{"id":"Α87","question":"Το Προσωπικό Ιδιωτικής Ασφάλειας, κατά την εκτέλεση της υπηρεσίας του, πρέπει να βρίσκεται:","options":["Στην κατάσταση ετοιμότητας του πράσινου χρώματος.","Στην κατάσταση ετοιμότητας του κίτρινου χρώματος.","Στην κατάσταση ετοιμότητα του πορτοκαλί χρώματος.","Στην κατάσταση ετοιμότητας του κόκκινου χρώματος.","Στην κατάσταση ετοιμότητας του μαύρου χρώματος."],"correct":1,"summary":""},{"id":"Α88","question":"Σύμφωνα με τη σχετική νομοθεσία οι Ιδιωτικές Επιχειρήσεις Παροχής Υπηρεσιών Ασφάλειας (Ι.Ε.Π.Υ.Α.) έχουν υποχρέωση να εφοδιάζουν το Προσωπικό Ιδιωτικής Ασφάλειας με αλεξίσφαιρο γιλέκο, όταν σ’ αυτό ανατίθεται:","options":["Η επιτήρηση ή φύλαξη κινητών ή ακινήτων περιουσιακών αγαθών και εγκαταστάσεων.","Η εκτέλεση καθηκόντων χειριστή Κέντρου Λήψης Σημάτων.","Η εγκατάσταση συστημάτων συναγερμών.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α89","question":"Ως ύποπτο άτομο, χαρακτηρίζεται εκείνο για το οποίο υπάρχουν σοβαρές υπόνοιες ότι:","options":["Εξαιτίας του χώρου, του χρόνου, των περιστάσεων, των συνθηκών και της συμπεριφοράς του, διέπραξε μία αξιόποινη πράξη ή πρόκειται να την διαπράξει στον συγκεκριμένο χώρο.","Μεταφέρει παράνομα αντικείμενα ή όπλα.","Δεν δικαιολογείται η παρουσία του στον συγκεκριμένο χώρο και χρόνο όπου κινείται.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α90","question":"Το Προσωπικό Ιδιωτικής Ασφάλειας, κατά την εκτέλεση της υπηρεσίας του, πρέπει να βρίσκεται σε μια κατάσταση:","options":["Ανησυχίας.","Ήρεμης επιφυλακής.","Χαλαρότητας.","Απόγνωσης."],"correct":1,"summary":""},{"id":"Α91","question":"Ποιοι από τους παρακάτω είναι οι παράγοντες που επηρεάζουν την παρατηρητικότητα;","options":["Τα προβλήματα στην όραση.","Οι καιρικές - περιβαλλοντικές συνθήκες.","Τα φυσικά εμπόδια.","Η απόσπαση προσοχής.","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α92","question":"Ποιος είναι ο κύριος ρόλος του Προσωπικού Ιδιωτικής Ασφάλειας στην αντιμετώπιση του εγκλήματος; Την κεντρική μονάδα ελέγχου, το λογισμικό του συστήματος, τις κάρτες (ή προσωπικοί κωδικοί, βιομετρικό αναγνωριστικό, ρυθμισμένο μπρελόκ), τις συσκευές ανάγνωσης και τις εξόδους του συστήματος.","options":["Κατασταλτικός.","Προληπτικός.","Αμυντικός.","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α93","question":"Η «ψυχολογία της μάζας», ως κατάσταση, μπορεί να κάνει τα άτομα να λειτουργούν:","options":["Ως ένα πειθαρχημένο σύνολο, στο οποίο υπάρχουν κανόνες.","Ως μία ομάδα που έχει παρόμοια ψυχολογική διάθεση.","Ως ένα πλήθος που μπορεί να προβεί σε αυθόρμητες ενέργειες και βιαιότητες.","Όλα τα παραπάνω."],"correct":2,"summary":""},{"id":"Α94","question":"Ένας πολύ βασικός κανόνας Αυτοπροστασίας αναφέρει: «Δημιουργώντας χώρο αντίδρασης, δημιουργείς και __________ αντίδρασης».","options":["υπόνοιες","απόσταση","μέγεθος","χρόνο"],"correct":3,"summary":""},{"id":"Α95","question":"Κατά τον έλεγχο ενός ατόμου, η τεχνική της ορθής γωνίας, έχει τα εξής πλεονεκτήματα:","options":["Το άγνωστο άτομο έχει να «αντιμετωπίσει» δύο διαφορετικούς «στόχους» σε δύο διαφορετικά σημεία σε περίπτωση που εκδηλώσει ενδεχόμενη επίθεση και επίσης δυσκολεύεται να «αντιμετωπίσει» ταυτόχρονα δύο «στόχους».","Προσφέρει κάλυψη και απόκρυψη στο Προσωπικό Ιδιωτικής Ασφάλειας.","Προσφέρει αθέατη ανάπτυξη στο Προσωπικό Ιδιωτικής Ασφάλειας.","Όλα τα παραπάνω."],"correct":0,"summary":""},{"id":"Α96","question":"Από τι αποτελείται συνήθως, ένα σύστημα ελέγχου πρόσβασης; (Επιλέξτε την πληρέστερη απάντηση).","options":["Την κεντρική μονάδα ελέγχου και το λογισμικό του συστήματος.","Την κεντρική μονάδα ελέγχου και το κλειστό κύκλωμα τηλεόρασης.","Την κεντρική μονάδα ελέγχου, το λογισμικό του συστήματος, τις κάρτες (ή προσωπικοί κωδικοί, βιομετρικό αναγνωριστικό, ρυθμισμένο μπρελόκ), τις συσκευές ανάγνωσης και τις εξόδους του συστήματος.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α97","question":"Από τι αποτελείται, συνήθως, ένα σύστημα πυρανίχνευσης; (Επιλέξτε την πληρέστερη απάντηση).","options":["Τη μονάδα ελέγχου και τις συσκευές ανίχνευσης καπνού.","Τη μονάδα ελέγχου και τις σειρήνες πυρανίχνευσης.","Τη μονάδα ελέγχου, τις συσκευές ανίχνευσης καπνού, θερμότητας, τις σειρήνες πυρανίχνευσης, τα μπουτόν αναγγελίας φωτιάς και τους φωτεινούς επαναλήπτες.","Τις σειρήνες πυρανίχνευσης και τα μπουτόν αναγγελίας φωτιάς."],"correct":2,"summary":""},{"id":"Α98","question":"Το αλεξίσφαιρο γιλέκο είναι ένα ατομικό προστατευτικό μέσο που προστατεύει τον κορμό του ανθρώπινου σώματος από:","options":["Βλήματα πυροβόλων όπλων.","Μικρά θραύσματα εκρηκτικών, όπως χειροβομβίδες.","Μαχαίρια.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α99","question":"Η __________ προετοιμασία είναι το σύνολο όλων εκείνων των στοιχείων που πρέπει να έχει σχεδιάσει το Προσωπικό Ιδιωτικής Ασφάλειας, πριν την άσκηση των καθηκόντων του. Περιλαμβάνει τον τρόπο με τον οποίο ενεργοποιεί το μυαλό του, κατευθύνει τις σκέψεις του, πιθανολογεί, επιλύει προβλήματα και προσπαθεί να προβλέψει την εξέλιξη μιας επικίνδυνης κατάστασης.","options":["ψυχική","σωματική","διανοητική","ψυχοσωματική"],"correct":2,"summary":""},{"id":"Α100","question":"Τι οφείλει να κάνει το Προσωπικό Ιδιωτικής Ασφάλειας πριν την ανάληψη υπηρεσίας;","options":["Να είναι συγκεντρωμένο, προσηλωμένο στην αποστολή του, έτοιμο να εκτελέσει τα καθήκοντά του με επάρκεια και αποτελεσματικότητα.","Να έχει γευματίσει αμέσως πριν την ανάληψη υπηρεσίας, για την αποφυγή της πιθανότητας να περιέλθει σε κατάσταση πείνας κατά την εκτέλεση αυτής.","Να προσέρχεται κουρασμένος και να ασχολείται με αντικείμενα άσχετα με την υπηρεσία που εκτελεί (π.χ. απασχόληση στο κινητό τηλέφωνο, τάμπλετ, τηλεόραση).","Να ενημερώσει τον Αξιωματικό Υπηρεσίας του τοπικού Αστυνομικού Τμήματος και να συντάξει αναφορά ανάληψης υπηρεσίας.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α101","question":"Ποια μηνύματα που μεταδίδονται από το Προσωπικό Ιδιωτικής Ασφάλειας χαρακτηρίζονται ως Μέσης Προτεραιότητας;","options":["Τα μηνύματα που αφορούν έκτακτη ανάγκη.","Τα μηνύματα που αφορούν συμβάντα.","Τα μηνύματα που υπερτερούν κάθε άλλης μετάδοσης.","Τα μηνύματα που αφορούν ιδιωτικά ζητήματα του προσωπικού.","Όλα τα παραπάνω."],"correct":1,"summary":""},{"id":"Α102","question":"Ποια μηνύματα που μεταδίδονται από το Προσωπικό Ιδιωτικής Ασφάλειας χαρακτηρίζονται ως Απόλυτης Προτεραιότητας:","options":["Τα μηνύματα που αφορούν τη λήξη της υπηρεσίας.","Τα μηνύματα που αφορούν ιδιωτικά ζητήματα του προσωπικού.","Τα μηνύματα που αφορούν καθημερινά συμβάντα.","Τα μηνύματα που αφορούν την έναρξη της υπηρεσίας.","Τα μηνύματα που αφορούν έκτακτη ανάγκη."],"correct":4,"summary":""},{"id":"Α103","question":"Ποια συσκευή ραδιοτηλεφώνου (ασυρμάτου) χρησιμοποιείται ευρέως από το Προσωπικό Ιδιωτικής Ασφάλειας κατά την εκτέλεση των καθηκόντων του;","options":["Η φορητή μονάδα ραδιοτηλεφώνου (ασύρματος, walkie-talkie), δηλαδή η προσωπική συσκευή την οποία φέρει το Προσωπικό Ιδιωτικής Ασφάλειας.","Η κεντρική μονάδα που βρίσκεται σε διάφορες εγκαταστάσεις που φυλάσσονται από το Προσωπικό Ιδιωτικής Ασφάλειας.","Η σταθερή μονάδα που βρίσκεται στα οχήματα περιπολίας.","Η κεντρική μονάδα που βρίσκεται στα Κέντρα Λήψης Σημάτων.","Όλες οι παραπάνω."],"correct":0,"summary":""},{"id":"Α104","question":"Ποιους κανόνες πρέπει να ακολουθεί το Προσωπικό Ιδιωτικής Ασφάλειας που συντάσσει αναφορά για ένα συμβάν;","options":["Μπορεί να απευθύνεται σε οποιονδήποτε παραλήπτη, ακόμη και αν περιέχει εμπιστευτικές πληροφορίες.","Πρέπει να περιέχει την προσωπική γνώμη του Προσωπικού Ιδιωτικής Ασφάλειας για το συμβάν, καθώς και αξιολογικές κρίσεις για αυτό.","Πρέπει να απαντά με σαφήνεια στα ερωτήματα τι συνέβη, ποιος εμπλέκεται, πότε συνέβη, πού έλαβε και γιατί έλαβε χώρα το συμβάν, πώς περιήλθε σε γνώση του, καθώς και μέτρα που ελήφθησαν ή ενέργειες που εκδηλώθηκαν από μέρος του.","Όλα τα παραπάνω."],"correct":2,"summary":""},{"id":"Α105","question":"Πότε πρέπει το Προσωπικό Ιδιωτικής Ασφάλειας να συντάσσει αναφορά για ένα συμβάν που έλαβε χώρα;","options":["Το συντομότερο δυνατόν μετά το συμβάν.","Αρκετές ημέρες μετά το συμβάν.","Μόνο εάν λάβει σχετική εντολή από την Αστυνομία.","Δεν είναι στις αρμοδιότητές του να συντάσσει αναφορά για συμβάντα.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α106","question":"Σε ποιες ενέργειες πρέπει να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας, το οποίο εν ώρα υπηρεσίας, επιθυμεί, για έκτακτο λόγο, την αντικατάστασή του από έτερο συνάδελφό του;","options":["Να αποχωρήσει, χωρίς να ενημερώσει κανένα, αφού πρόκειται για έκτακτο λόγο.","Να αποχωρήσει και κατόπιν να ενημερώσει τον Αρχιφύλακα ή τον Επόπτη του και να λάβει σχετικές οδηγίες.","Να ενημερώσει προηγουμένως την Ελληνική Αστυνομία.","Να ενημερώσει προηγουμένως τον Αρχιφύλακα ή τον Επόπτη του και να λάβει σχετικές οδηγίες.","Κανένα από τα παραπάνω."],"correct":3,"summary":""},{"id":"Α107","question":"Το Προσωπικό Ιδιωτικής Ασφάλειας κατά τη χρήση ραδιοτηλεφώνου (ασυρμάτου):","options":["Αναφέρει τον κωδικό κλήσης του κατά την έναρξη της μετάδοσής του.","Μιλά με πολύ γρήγορη ροή, χωρίς να ακούει τις οδηγίες του Κέντρου Ελέγχου.","Συζητά προσωπικά θέματα, μόνο αν δεν υπάρχει φόρτος εργασίας.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α108","question":"Τι περιλαμβάνουν οι βασικές λειτουργίες των σύγχρονων Κέντρων Λήψης Σημάτων;","options":["Συστήματα συναγερμού εισβολής - παρείσφρησης - παράνομης εισόδου.","Συστήματα συναγερμού ομηρίας - ληστείας.","Συστήματα κλειστού κυκλώματος τηλεόρασης CCTV.","Συστήματα συναγερμού πυρκαγιάς.","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α109","question":"Ποια είναι μία συνηθισμένη παράλειψη του Προσωπικού Ιδιωτικής Ασφάλειας κατά την εκτέλεση υπηρεσίας και την ανταπόκριση σε περιστατικά;","options":["Η παράλειψη συλλογής πειστήριων και ιχνών από τη σκηνή του εγκλήματος.","Η παράλειψη ενημέρωσης των Μέσων Μαζικής Ενημέρωσης (Μ.Μ.Ε.).","Η παράλειψη έγκαιρης ενημέρωσης των αρμοδίων δημοσίων Αρχών.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α110","question":"Η διαχείριση πλήθους σε αθλητικές διοργανώσεις:","options":["Δεν έχει καμία επιρροή στην ασφάλεια της εκδήλωσης, αφού ο κάθε θεατής γνωρίζει τη θέση του στις κερκίδες.","Δεν έχει καμία επιρροή στην ασφάλεια της εκδήλωσης, αφού όλα γίνονται αυτοματοποιημένα.","Επηρεάζει σε μεγάλο βαθμό την ασφάλεια και την επιτυχία της εκδήλωσης.","Δεν έχει καμία σχέση με τις αθλητικές διοργανώσεις."],"correct":2,"summary":""},{"id":"Α111","question":"Η τοποθέτηση των φιλάθλων στις κερκίδες των αθλητικών εγκαταστάσεων:","options":["Είναι αποκλειστική αρμοδιότητα της Ελληνικής Αστυνομίας.","Είναι στα καθήκοντα του Προσωπικού Ιδιωτικής Ασφάλειας που εκτελεί υπηρεσία στη συγκεκριμένη αθλητική εγκατάσταση.","Σε καμία περίπτωση δεν αποτελεί αρμοδιότητα του Προσωπικού Ιδιωτικής Ασφάλειας.","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α112","question":"Πώς πρέπει να ενεργεί το Προσωπικό Ιδιωτικής Ασφάλειας κατά τη διάρκεια αθλητικής εκδήλωσης, εάν προκληθεί με υβριστικά συνθήματα και χειρονομίες;","options":["Να εμπλακεί σε διένεξη.","Να ανταποδώσει την πρόκληση και να ενημερώσει την Ελληνική Αστυνομία.","Να ανταποδώσει την πρόκληση και να ενημερώσει τον Υπεύθυνο Ασφάλειας.","Να μην ανταποκριθεί σε καμία πρόκληση, να διατηρήσει την ψυχραιμία του και να μην εμπλακεί σε διενέξεις, ώστε να μην δημιουργηθεί κρίση."],"correct":3,"summary":""},{"id":"Α113","question":"Μια μελέτη ασφάλειας, πρέπει να περιλαμβάνει:","options":["Την υφιστάμενη κατάσταση της εγκατάστασης.","Την εκτίμηση της επικινδυνότητας.","Τον προσδιορισμό της τρωτότητας - ευαλωτότητας.","Την πρόταση για ενδεχόμενη βελτίωση των υφιστάμενων μέτρων ασφάλειας.","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α114","question":"«Υποδομές __________ Σημασίας» νοούνται τα περιουσιακά στοιχεία, συστήματα ή μέρη αυτών τα οποία είναι ουσιώδη για τη διατήρηση των λειτουργιών ζωτικής σημασίας της κοινωνίας, της υγείας, της ασφάλειας, της οικονομικής και κοινωνικής ευημερίας των μελών της, των οποίων η διακοπή λειτουργίας ή η καταστροφή θα είχε σημαντικό αντίκτυπο για τη χώρα, ως αποτέλεσμα αδυναμίας διατήρησης των λειτουργιών αυτών (πάνω από ένα προκαθορισμένο επίπεδο).","options":["Άνευ","Ζωτικής","Ευρωπαϊκής","Μικρής","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α115","question":"Ποια είναι ορισμένα από τα περιστατικά τα οποία ενδέχεται να διαχειριστεί το Προσωπικό Ιδιωτικής Ασφάλειας κατά την παροχή υπηρεσιών ασφαλείας σε χερσαία Μέσα Μαζικής Μεταφοράς (Μ.Μ.Μ.);","options":["Διαχείριση τηλεφωνικής απειλής για τοποθέτηση βόμβας ή/και ανεύρεση ύποπτου αντικειμένου ή/και εκρηκτικού, εμπρηστικού μηχανισμού.","Αντιμετώπιση ατόμων που χρήζουν ειδικής αντιμετώπισης π.χ. οινόφλυγες, ψυχασθενείς.","Διαχείριση περιστατικών αυτοκτονίας.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α116","question":"Ποιο από τα παρακάτω αντικείμενα, με την επιφύλαξη των ισχυόντων κανόνων ασφάλειας πτήσης, δεν επιτρέπεται να φέρουν οι επιβάτες, σε αυστηρά ελεγχόμενη περιοχή ασφάλειας και στον θάλαμο αεροσκάφους.","options":["Ψαροντούφεκο.","Καμινέτο.","Ρόπαλο του μπέιζμπολ.","Πυροβόλο όπλο.","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α117","question":"Ποιες από τις παρακάτω εγκαταστάσεις είναι εν δυνάμει πιθανοί στόχοι;","options":["Κρατικά κτήρια και λοιπές υπηρεσίες π.χ. υπουργεία, δήμοι, δικαστήρια, πανεπιστημιακά ιδρύματα κ.λπ..","Κτήρια πρεσβειών, διεθνών οργανισμών κ.λπ..","Αερολιμένες, λιμενικές εγκαταστάσεις, σταθμοί μετρό κ.λπ..","Υγειονομικοί φορείς π.χ. νοσοκομεία, κέντρα υγείας, ιδιωτικές κλινικές κ.λπ..","Όλα τα παραπάνω.."],"correct":4,"summary":""},{"id":"Α118","question":"Το ____________ αποτελεί εθνικό σημείο επαφής για την προστασία των Ευρωπαϊκών Υποδομών Ζωτικής Σημασίας (Ε.Υ.Ζ.Σ.) που βρίσκονται εντός της ελληνικής επικράτειας.","options":["Κεντρικό Συμβούλιο","Κέντρο Μελετών Ασφάλειας","Υπουργείο Προστασίας του Πολίτη","Κέντρο Ελέγχου Υποδομών"],"correct":1,"summary":""},{"id":"Α119","question":"Οι αιφνιδιαστικές επιθέσεις - καταλήψεις σε εγκαταστάσεις - στόχους, συνήθως, πραγματοποιούνται:","options":["Από μεμονωμένα άτομα.","Μόνο από άνδρες.","Από οργανωμένες ομάδες και κατά τις βραδινές ή πολύ πρωινές ώρες.","Μόνο από γυναίκες."],"correct":2,"summary":""},{"id":"Α120","question":"Ποιος είναι ο νόμος που σε εθνικό επίπεδο διασφαλίζει την εφαρμογή του κώδικα ISPS;","options":["Ο ν.3622/2007.","Ο ν.2518/1997.","Δεν υφίσταται σχετική νομοθεσία.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α121","question":"Οι Υπηρεσίες ασφαλείας για λιμένες - λιμενικές εγκαταστάσεις που προβλέπονται σε εγκεκριμένα σχέδια ασφάλειας μπορούν να παρέχονται από Ιδιωτικές Επιχειρήσεις:","options":["Κατόπιν προφορικής άδειας της Λιμενικής Αρχής.","Χωρίς την απαίτηση οποιασδήποτε άδειας.","Κατόπιν έγγραφης άδειας της Λιμενικής Αρχής.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α122","question":"Η προετοιμασία, ο εξοπλισμός, καθώς και τα μέτρα που καλείται κάθε φορά να λάβει το Προσωπικό Ιδιωτικής Ασφάλειας, κατά την πραγματοποίηση χρηματαποστολών, ποικίλουν ανάλογα:","options":["Με το είδος της χρηματαποστολής (π.χ. εποχουμένη ή πεζή).","Την αξία των αντικειμένων που μεταφέρονται.","Την απόσταση που θα διανυθεί.","Τα δρομολόγια που θα ακολουθηθούν.","Την τοποθεσία διεξαγωγής της.","Όλα τα ανωτέρω."],"correct":5,"summary":""},{"id":"Α123","question":"Με τον όρο χρηματαποστολή νοείται:","options":["Η μεταφορά προσώπων από μια τράπεζα σε μια άλλη.","Η αποστολή χρημάτων από ένα μέρος του πλανήτη σε ένα άλλο μέσω διαδικτύου.","Η φυσική μεταφορά χρημάτων ή αντικειμένων αξίας από ένα μέρος σε ένα άλλο.","Η ψηφιακή μεταφορά χρήματων από μια τράπεζα σε μια άλλη."],"correct":2,"summary":""},{"id":"Α124","question":"Απαραίτητος ατομικός εξοπλισμός, τον οποίο οφείλει να χρησιμοποιεί το Προσωπικό Ιδιωτικής Ασφάλειας, κατά την πραγματοποίηση χρηματαποστολών αποτελεί:","options":["Η Αστυνομική ράβδος (γκλοπ).","Η συσκευή εκκένωσης ηλεκτρικού ρεύματος (taser).","Το αλεξίσφαιρο γιλέκο.","Το σπρέι πιπεριού."],"correct":2,"summary":""},{"id":"Α125","question":"Στο όχημα της χρηματαποστολής πρέπει να επιβαίνουν τουλάχιστον _________ υπάλληλοι Προσωπικού Ιδιωτικής Ασφάλειας.","options":["δύο (2)","τρεις (3)","τέσσερις (4)","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α126","question":"Ο συνοδός - συνοδηγός του οχήματος της χρηματαποστολής είναι υπεύθυνος για:","options":["Την πλήρωση του οχήματος με καύσιμα και τον έλεγχο της πίεσης των ελαστικών.","Την απρόσκοπτη επικοινωνία με τα συνοδευτικά οχήματα, το Κέντρο Ελέγχου και τις αρμόδιες δημόσιες Αρχές (Ελληνική Αστυνομία) σε περίπτωση οποιουδήποτε κινδύνου ή απειλής.","Τη διατήρηση του οχήματος της χρηματαποστολής σε άριστη λειτουργική κατάσταση.","Την οδήγηση των οχημάτων μεταφοράς αξιών σε δημόσιους δρόμους, μεταφέροντας τις αξίες."],"correct":1,"summary":""},{"id":"Α127","question":"Σημεία επιθέσεων είναι όλοι εκείνοι οι χώροι στους οποίους διαμένουν, διατηρούν την επαγγελματική τους στέγη, δραστηριοποιούνται καθώς, επίσης και τα σημεία από τα οποία θα διέλθουν τα προστατευόμενα πρόσωπα, ήτοι οι περιοχές προβλέψιμης _________ (Π.Π.Μ.).","options":["μειονότητας","μελέτης","μετακίνησης","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α128","question":"Ποιο από τα παρακάτω πρόσωπα μπορεί να αναθέσει σε Ιδιωτική Επιχείρηση Παροχής Υπηρεσιών Ασφαλείας (Ι.Ε.Π.Υ.Α.) την προστασία του;","options":["Ο/η Πρόεδρος του Συμβουλίου της Επικρατείας.","Ο/η παρουσιάστρια δελτίου ειδήσεων.","Ο/η εκδότης μεγάλης εφημερίδας.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α129","question":"Τα σήματα των συστημάτων συναγερμού μεταδίδονται σε Κέντρα _________ ελέγχου και διαβίβασης σημάτων συναγερμού (άρθρο 1 παρ.1 περ. ι ν.2518/1997).","options":["συγκεντρωτικού","λειτουργίας","λογικού","λήψης"],"correct":3,"summary":""},{"id":"Α130","question":"Τι οφείλει να κάνει το Προσωπικό Ιδιωτικής Ασφάλειας το οποίο εκτελεί υπηρεσία φύλαξης ή περιπολίας, σε περίπτωση ενεργοποίησης συναγερμού;","options":["Αγνοεί την ενεργοποίηση του συναγερμού, εφόσον γνωρίζει ότι ενεργοποιείται, συχνά, κατά λάθος.","Εκτιμά την κατάσταση με οποιοδήποτε κίνδυνο, ακόμη και της ζωής του.","Ελέγχει τον τύπο και το είδος του συναγερμού: π.χ. πυρκαγιά, παράνομη είσοδος.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α131","question":"Ο σκύλος περιπολίας δύναται να αξιοποιηθεί - χρησιμοποιηθεί:","options":["Στο εσωτερικό των φυλασσόμενων κτηρίων και ιδιοκτησιών ή σε περίκλειστους χώρους.","Σε δημόσιους και γενικά προσιτούς, στο κοινό, χώρους.","Εξωτερικά των φυλασσόμενων εγκαταστάσεων.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α132","question":"Ποιο από τα παρακάτω δεν αποτελεί καθήκον του Προσωπικού Ιδιωτικής Ασφάλειας, στο οποίο ανατίθεται η παροχή υπηρεσιών ασφαλείας σε εκδηλώσεις.","options":["Η ανταπόκριση σε περιστατικά και περιπτώσεις έκτακτης ανάγκης.","Η ασφάλεια των ιδιωτικών χώρων στάθμευσης οχημάτων.","Ο καθαρισμός - καθαριότητα του χώρου με το πέρας της εκδήλωσης.","Η πρόληψη πάσης φύσεως εγκληματικών συμπεριφορών.","Κανενα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α133","question":"Τι οφείλει να κάνει το Προσωπικό Ιδιωτικής Ασφάλειας κατά την εκτέλεση υπηρεσίας εποχούμενης περιπολίας;","options":["Να καταμετρά την τάση του ρεύματος σε συστήματα παροχής ηλεκτρικής ενέργειας.","Να διενεργεί ελέγχους ή επιθεωρήσεις ασφαλείας σε χώρους, εγκαταστάσεις ή συγκεκριμένα σημεία ελέγχου - διέλευσης.","Να επιλαμβάνεται για την εξιχνίαση εγκλημάτων και να συλλέγει ίχνη και πειστήρια.","Όλα τα παραπάνω."],"correct":1,"summary":""},{"id":"Α134","question":"Τι οφείλει να κάνει το Προσωπικό Ιδιωτικής Ασφάλειας κατά την εκτέλεση υπηρεσίας στατικής φύλαξης για τον εντοπισμό και την αποτροπή εκδήλωσης εγκληματικών ενεργειών σε βάρος του και σε βάρος του φυλασσόμενου στόχου;","options":["Να χρησιμοποιεί την αστυνομική ράβδο του (γκλοπ) ή τη διαθέσιμη συσκευή εκκένωσης ηλεκτρικού ρεύματος.","Να επιδεικνύει προληπτικά και να χρησιμοποιεί αποτρεπτικά τον ατομικό του οπλισμό.","Να διενεργεί σωματική έρευνα σε διερχόμενα άτομα πλησίον του στόχου τα οποία θεωρεί ύποπτα.","Να λαμβάνει κατάλληλα μέτρα αυτοπροστασίας και να επιτηρεί διακριτικά τον χώρο, προς εντοπισμό ύποπτων ατόμων, οχημάτων ή αντικειμένων.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α135","question":"Σε περίπτωση εύρεσης παράνομου αντικειμένου (ναρκωτικές ουσίες, φωτοβολίδες κ.α.) από το Προσωπικό Ιδιωτικής Ασφάλειας κατά τη διεξαγωγή αθλητικής εκδήλωσης:","options":["Αναλαμβάνει μόνος του τον έλεγχο και την εξουδετέρωση του αντικειμένου.","Αναλαμβάνει μαζί με τον προιστάμενό του, τον έλεγχο και την εξουδετέρωση του αντικειμένου.","Το ελέγχει, το περιεργάζεται, ώστε να εξακριβώσει επακριβώς τι είναι, για να το αναφέρει στον Υπεύθυνο Ασφάλειας.","Κανένα από τα παραπάνω."],"correct":3,"summary":""},{"id":"Α136","question":"Σε περίπτωση δημιουργίας αναταραχών με όχλο στη θύρα ενός γηπέδου, το Προσωπικό Ιδιωτικής Ασφάλειας ενδείκνυται:","options":["Να επέμβει μόνο του, για να καταστείλει τις αναταραχές.","Να καλυφθεί, ώστε να εξασφαλίσει τη σωματική του ακεραιότητα.","Να καλυφθεί, ώστε να εξασφαλίσει τη σωματική του ακεραιότητα, κατά προτίμηση μπροστά από τις αστυνομικές δυνάμεις.","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α137","question":"Οι ελεγχόμενοι χώροι θεωρούνται ως:","options":["«Ζώνες μη Ελεγχόμενης Πρόσβασης».","«Ζώνες Ελεύθερης Πρόσβασης».","«Ζώνες Περιορισμένης Πρόσβασης».","«Ζώνες μη Περιορισμένης Πρόσβασης».","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α138","question":"Οι μη ελεγχόμενοι χώροι θεωρούνται ως:","options":["«Ζώνες Ελεγχόμενης Πρόσβασης».","«Ζώνες Ελεύθερης Πρόσβασης».","«Ζώνες Περιορισμένης Πρόσβασης».","«Ζώνες Μειωμένης Πρόσβασης».","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α139","question":"Ο εξοπλισμός ασφαλείας που χρησιμοποιείται στους αερολιμένες σύμφωνα με την «Τεχνική Οδηγία Ασφαλείας Αριθ. (1) - 1η Τ.Ο.Α.» περιλαμβάνει:","options":["Ακτινοσκοπικό εξοπλισμό (X-RAY).","Λογισμικό αυτόματης διαγραφής (A.C.S.).","Εξοπλισμό ανίχνευσης μετάλλων υποδημάτων (S.M.D.).","Σκύλοι ανίχνευσης εκρηκτικών (Σ.Α.Ε.).","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α140","question":"Ως «____________ στόχοι», θεωρούνται κτήρια και εγκαταστάσεις τα οποία, λόγω του προορισμού τους και των ατόμων που εργάζονται ή κατοικούν σε αυτά, ενδέχεται να αποτελέσουν στόχο εγκληματικής ενέργειας.","options":["εναλλακτικοί","δύσκολοι","ευπαθείς","απαθείς"],"correct":2,"summary":""},{"id":"Α141","question":"Τι προβλέπεται για τον έλεγχο των προσερχόμενων φιλάθλων και τη σωματική έρευνα από μέλος του προσωπικού ασφαλείας; (άρθρο 41Δ, παρ.12 του ν.2725/1999)","options":["Ο έλεγχος μπορεί να πραγματοποιηθεί ακόμη και χωρίς την συναίνεση του προσερχόμενου φιλάθλου.","Ο έλεγχος μπορεί, κατόπιν συναίνεσης του προσερχόμενου φιλάθλου, να γίνει και με σωματική έρευνα από μέλος του προσωπικού ασφαλείας του αντίθετου φύλου με τον φίλαθλο.","Ο έλεγχος μπορεί, κατόπιν συναίνεσης του προσερχόμενου φιλάθλου, να γίνει και με σωματική έρευνα από μέλος του προσωπικού ασφαλείας του ίδιου φύλου με τον φίλαθλο.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α142","question":"Η φύλαξη των Δομών Προσωρινής Υποδοχής και Προσωρινής Φιλοξενίας υπηκόων τρίτων χωρών ανατίθεται:","options":["Στην Ελληνική Αστυνομία, ενώ συμπληρωματικά μπορεί να ανατεθεί και σε κατάλληλα εκπαιδευμένο Προσωπικό Ιδιωτικής Ασφάλειας.","Αποκλειστικά στη Δημοτική Αστυνομία.","Αποκλειστικά στις Ένοπλες Δυνάμεις.","Αποκλειστικά στο Λιμενικό Σώμα.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α143","question":"Σε χρηματαποστολή που συμμετέχει συνοδευτικό όχημα, το πλήρωμά του είναι υπεύθυνο για:","options":["Τη διευκόλυνση της κυκλοφορίας του οχήματος της χρηματαποστολής.","Την προστασία - κάλυψη του οχήματος της χρηματαποστολής καθ’ όλη τη διάρκεια της διαδρομής.","Την εκδήλωση αντίδρασης σε περίπτωση επίθεσης.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α144","question":"Ποιο από τα παρακάτω μέλη της Συνοδευτικής Ομάδας Ασφαλείας (Σ.Ο.Α.) πρέπει πρωτίστως να έχει ως μεγάλο του προσόν την αυτοθυσία;","options":["Ο αριστερός συνοδός.","Ο προσωπικός συνοδός (σωματοφύλακας).","Ο προπομπός.","Ο δεξιός συνοδός.","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α145","question":"Σε ποιες ενέργειες πρέπει να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας στην περίπτωση προσέλευσης εξωτερικού συνεργάτη που δηλώνει ότι πρέπει να ενεργήσει εργασίες συντήρησης στα πληροφοριακά συστήματα που υπάρχουν στον χώρο που φυλάσσει το εν λόγω προσωπικό;","options":["Να μην του επιτρέψει την είσοδο και να μην ενημερώσει τους αρμοδίους.","Να ταυτοποιήσει το εν λόγω άτομο και να ενημερώσει τους αρμόδιους.","Να του επιτρέψει την είσοδο και να μην ενημερώσει κανέναν.","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α146","question":"Σημαντική προϋπόθεση για τη διαδικασία ελέγχου με τα χέρια από το Προσωπικό Ιδιωτικής Ασφάλειας στους αερολιμένες αποτελεί η:","options":["Διενέργεια σε ιδιαίτερο παρακείμενο κλειστό χώρο από ελεγκτή ασφάλειας του ιδίου φύλου, χωρίς να απαιτείται οποιαδήποτε συγκατάθεση του ελεγχόμενου.","Διενέργεια σε ιδιαίτερο παρακείμενο κλειστό χώρο από ελεγκτή ασφάλειας του αντίθετου φύλου και παροχή ρητής συγκατάθεσης του ελεγχόμενου.","Διενέργεια σε ιδιαίτερο παρακείμενο κλειστό χώρο από ελεγκτή ασφάλειας του ιδίου φύλου και παροχή ρητής συγκατάθεσης του ελεγχόμενου.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α147","question":"Ποια από τα παρακάτω δεν περιλαμβάνεται στα βασικά καθήκοντα του Προσωπικού Ιδιωτικής Ασφάλειας κατά τη στατική φύλαξη;","options":["Να έχει πλήρη γνώση του τομέα ευθύνης του.","Να επιτηρεί διακριτικά τον φυλασσόμενο στόχο.","Να εντοπίζει και να ανιχνεύει ύποπτες ενέργειες δραστών εγκληματικών ενεργειών.","Να συνομιλεί στο κινητό του τηλέφωνο με φιλικά του πρόσωπα."],"correct":3,"summary":""},{"id":"Α148","question":"Πού μπορεί να οφείλεται ένας «ψευδής» συναγερμός;","options":["Σε παρείσφρηση (εισβολή) ατόμου στον χώρο.","Σε μηχανική δυσλειτουργία ή ανθρώπινη ενεργοποίηση.","Σε εκδήλωση πυρκαγιάς.","Σε εκδήλωση ομηρίας."],"correct":1,"summary":""},{"id":"Α149","question":"Ποιο είναι ένα συνηθισμένο λάθος του Προσωπικού Ιδιωτικής Ασφάλειας κατά την εκτέλεση υπηρεσίας και την ανταπόκριση σε περιστατικά;","options":["Ο υπερβολικός ενθουσιασμός.","Η αυτοσυγκέντρωση.","Η προσοχή των χεριών του υπόπτου.","Η υπερβολική προσοχή σε σημάδια κινδύνου.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α150","question":"Οι ομηρίες διαπράττονται, συνήθως, από ορισμένες κατηγορίες δραστών - προσώπων, όπως:","options":["Νοητικά διαταραγμένα άτομα.","Ποινικοί εγκληματίες.","Τρομοκράτες.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α151","question":"Κατά τη διάρκεια του σεισμού θα πρέπει:","options":["Εάν είστε μέσα σε κτήριο, να προσπαθήσετε να εξέλθετε από αυτό.","Να μείνετε στον χώρο και να καλυφθείτε μέχρι να τελειώσει η δόνηση.","Εάν υπάρχει ανελκυστήρας στο κτήριο, να τον χρησιμοποιήσετε για να φτάσετε στην έξοδο.","Να μετακινηθείτε προς κάποιο παράθυρο για να εξέλθετε από εκεί."],"correct":1,"summary":""},{"id":"Α152","question":"Σε περίπτωση έκτακτης ανάγκης και κατά μήκος της όδευσης διαφυγής, οι πόρτες:","options":["Είναι πάντα ανοικτές.","Είναι πάντα κλειστές.","Ανοίγουν με οποιαδήποτε φορά.","Ανοίγουν με την ίδια φορά με τη φορά διαφυγής."],"correct":3,"summary":""},{"id":"Α153","question":"Ποια από τις παρακάτω θεωρείται βασική ενέργεια μετά τον σεισμό:","options":["Η εκκένωση του κτηρίου με χρήση του ανελκυστήρα.","Η μετακίνηση σε ανοιχτό και ασφαλή χώρο.","Η είσοδος στο κτήριο για αναζήτηση αγνοούμενων.","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α154","question":"Πού οφείλεται, μεταξύ άλλων, η λανθασμένη ανταπόκριση σε περιστατικά από το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Στην έλλειψη αυτοσυγκέντρωσης.","Στην αδιαφορία κατά την εκπαίδευση ή κατάρτισή του.","Στον εφησυχασμό.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α155","question":"Ποιο από τα παρακάτω αποτελεί πλεονέκτημα του ευρωπαϊκού αριθμού κλήσης έκτακτης ανάγκης (112);","options":["Μπορεί να γίνει από σταθερό ή κινητό τηλέφωνο, χωρίς χρέωση.","Παρέχει πληροφορίες για θέματα που αφορούν το Προσωπικό Ιδιωτικής Ασφάλειας.","Έχει μικρή χρέωση κλήσης.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α156","question":"Ποιες είναι ορισμένες από τις σημαντικότερες ενέργειες που πρέπει να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας το οποίο καλείται να αντιμετωπίσει μία κατάσταση έκτακτης ανάγκης:","options":["Να δείξει υπερβάλλοντα ζήλο, γιατί αυτό θα εκτιμηθεί από τον προϊστάμενο του.","Να αναλάβει δράση, χωρίς δεύτερη σκέψη και να αντιμετωπίσει την κατάσταση, προτού πάρει ανεξέλεγκτες διαστάσεις.","Να ενεργήσει με αυθορμητισμό, γιατί αυτό βοηθά σε τέτοιες καταστάσεις.","Να εκτιμήσει την κατάσταση, καθώς και να ενημερώσει τις αρμόδιες δημόσιες Αρχές και τους προϊσταμένους του.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α157","question":"Δείκτες ύποπτου ταχυδρομείου αποτελούν:","options":["Η ύπαρξη σφραγίδας ταχυδρομείου που δεν ταιριάζει με τη διεύθυνση του αποστολέα.","Η ύπαρξη υπερβολικού αριθμού γραμματοσήμων επί του φακέλου.","Η ύπαρξη ενδείξεων «Προσωπικό» ή «Εμπιστευτικό» πάνω στον φάκελο - δέμα.","Η ύπαρξη διάχυτης οσμής.","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α158","question":"Όταν γίνει εντοπισμός ύποπτου αντικειμένου δεν θα πρέπει:","options":["Να ανοίξετε όλες τις πόρτες και τα παράθυρα.","Να μην ενημερώσετε απευθείας τον προϊστάμενό σας και την Ελληνική Αστυνομία.","Να αφήσετε το ύποπτο αντικείμενο στον χώρο.","Να απαγορεύσετε την είσοδο σε άτομα."],"correct":1,"summary":""},{"id":"Α159","question":"Κατά τη διάρκεια μιας καταιγίδας, όταν βρισκόμαστε σε κτήριο:","options":["Ασφαλίζουμε τις πόρτες και τα παράθυρα του κτηρίου.","Ελέγχουμε τη στερέωση ενδεχόμενων αναρτημένων διαφημιστικών πινακίδων στο κτήριο.","Δεν αγγίζουμε τις σωληνώσεις των υδραυλικών.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α160","question":"Πριν και κατά τη διάρκεια της εκδήλωσης θυελλωδών ανέμων:","options":["Ανοίγουμε τις πόρτες και τα παράθυρα.","Ασφαλίζουμε αντικείμενα στο κτήριο που μπορεί να προκαλέσουν ζημιές ή τραυματισμούς.","Παραμένουμε στο εσωτερικό του κτηρίου και δεν κάνουμε καμία ενέργεια.","Επικοινωνούμε με την ΕΛ.ΑΣ.."],"correct":1,"summary":""},{"id":"Α161","question":"Η εφαρμογή εκ μέρους του Προσωπικού Ιδιωτικής Ασφάλειας των οδηγιών προστασίας από καιρικά φαινόμενα εξασφαλίζει:","options":["Την ασφάλεια του ίδιου του προσωπικού.","Την ασφάλεια των προσώπων που προστατεύουν ή επιτηρούν.","Την ασφάλεια των εγκαταστάσεων που προστατεύουν ή επιτηρούν.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α162","question":"Κατά τη διάρκεια της πλημμύρας, εάν είστε μέσα σε κτήριο:","options":["Κατευθυνθείτε στο υπόγειο.","Απομακρυνθείτε από υπόγειους χώρους και μετακινηθείτε σε ασφαλές υψηλό σημείο.","Ειδοποιείτε το Λιμενικό Σώμα - Ελληνική Ακτοφυλακή.","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α163","question":"Ποιες είναι ορισμένες από τις βασικές ενέργειες του Προσωπικού Ιδιωτικής Ασφάλειας σε περίπτωση διαπίστωσης διάπραξης εγκλήματος – αξιόποινης πράξης;","options":["Να αποκλείσει τον χώρο και να τον τηρήσει ανέπαφο, καθώς και να αναφέρει άμεσα και ήρεμα οτιδήποτε παρατηρεί και πληροφορείται, καθώς και ενδεχόμενη ανάγκη συνδρομής άλλων φορέων.","Να ενημερώσει τους δημοσιογράφους και τους παριστάμενους πολίτες, για να τους καθησυχάσει, καθώς και να δείξει αυτοσυγκράτηση και να λάβει μέτρα αυτοπροστασίας.","Να απομακρύνει όλους τους αναρμόδιους από τη σκηνή του εγκλήματος, πλην των δημοσιογράφων που έχουν δικαίωμα άμεσης ενημέρωσης.","Να εκτιμήσει την κατάσταση, να δείξει αυτοσυγκράτηση και να οδηγήσει όλους τους σημαντικούς μάρτυρες στο πλησιέστερο Αστυνομικό Τμήμα.","Όλα τα παραπάνω."],"correct":0,"summary":""},{"id":"Α164","question":"Ποιες είναι οι ενέργειες του Προσωπικού Ιδιωτικής Ασφάλειας μετά την έκρηξη:","options":["Να μην αποκλείσει τον χώρο και να μην απομακρύνει τυχόντα τρίτα πρόσωπα, όπως περίεργα άτομα, περαστικούς, εκπροσώπους Μ.Μ.Ε..","Να αποκλείσει τον χώρο και να απομακρύνει τυχόντα τρίτα πρόσωπα όπως περίεργα άτομα, περαστικούς, εκπροσώπους Μ.Μ.Ε..","Να αποκλείσει τον χώρο και να μην απομακρύνει τυχόντα τρίτα πρόσωπα όπως περίεργα άτομα, περαστικούς, εκπροσώπους Μ.Μ.Ε..","Να μην κάνει περαιτέρω έρευνα του χώρου για ενδεχόμενη ύπαρξη άλλης βόμβας."],"correct":1,"summary":""},{"id":"Α165","question":"Σε περίπτωση που το Προσωπικό Ιδιωτικής Ασφάλειας βρεθεί σε θέση ομήρου θα πρέπει:","options":["Να μην ενημερώσει τους δράστες για ενδεχόμενο πρόβλημα υγείας που αντιμετωπίζει.","Να μην ακολουθήσει τις οδηγίες, ειδικά κατά τα πρώτα λεπτά του επεισοδίου.","Να έχει αρκετή παρατηρητικότητα.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α166","question":"Ποιο από τα παρακάτω αποτελεί πλεονέκτημα του ευρωπαϊκού αριθμού κλήσης έκτακτης ανάγκης (112);","options":["Δεν διαθέτει λειτουργία αποστολής SMS.","Έχει τη δυνατότητα γεωγραφικού εντοπισμού της θέσης του καλούντος.","Δεν δέχεται εισερχόμενες κλήσεις.","Εκπέμπει μόνο στην Ελλάδα."],"correct":1,"summary":""},{"id":"Α167","question":"Η διοργάνωση ασκήσεων ετοιμότητας:","options":["Είναι απαραίτητες, γιατί, έτσι, θα φανούν οι αδυναμίες.","Δεν αφορούν όλους τους εργαζομένους σε μια επιχείρηση.","Δεν χρειαζόνται να πραγματοποιούνται ασκήσεις ετοιμότητας.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α168","question":"Η κατάσβεση μιας πυρκαγιάς μπορεί να γίνει με τους παρακάτω τρόπους:","options":["Αφαίρεση της καύσιμης ύλης.","Μείωση της θερμοκρασίας.","Αποστέρηση του οξυγόνου.","Ένα, τουλάχιστον, από τα παραπάνω."],"correct":3,"summary":""},{"id":"Α169","question":"Το νερό, ως κατασβεστικό μέσο, ενδείκνυται για κατάσβεση πυρκαγιών:","options":["Υγρών καυσίμων εντός βυτιοφόρου οχήματος.","Στερεών καυσίμων, απουσία ηλεκτρικού ρεύματος.","Ηλεκτρικών πινάκων.","Μόνο στις δασικές πυρκαγιές."],"correct":1,"summary":""},{"id":"Α170","question":"Η ξηρά σκόνη ως κατασβεστικό υλικό ενδείκνυται για κατάσβεση πυρκαγιών:","options":["Μόνο αέριων καυσίμων.","Μόνο στερεών καυσίμων.","Στερεών, υγρών, αέριων καυσίμων, πυρκαγιών μετάλλων (και) με παρουσία ηλεκτρικού ρεύματος.","Μόνο σε πυρκαγιές μετάλλων."],"correct":2,"summary":""},{"id":"Α171","question":"Το διοξείδιο του άνθρακα (CO2) ενδείκνυται για κατάσβεση πυρκαγιών:","options":["Μόνο υγρών καυσίμων.","Μόνο αερίων καυσίμων.","Μόνο ηλεκτρικών πυρκαγιών.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α172","question":"Για την επίτευξη της καύσης είναι απαραίτητο το καύσιμο υλικό να έρθει σε επαφή με οξυγόνο και να θερμανθεί από κατάλληλη πηγή, έτσι, ώστε να ξεκινήσει η χημική αντίδραση. Η σχηματική απεικόνιση αυτών των παραγόντων, του καύσιμου υλικού, του οξυγόνου και της απαιτούμενης αρχικής ενέργειας, υπό τη μορφή θερμότητας, ονομάζεται:","options":["Τρίγωνο της φωτιάς.","Τετράγωνο της φωτιάς.","Πεντάεδρο της φωτιάς.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α173","question":"Κάνω χρήση πυροσβεστικού μέσου για την αντιμετώπιση μιας πυρκαγιάς, έχοντας την κατεύθυνση του ανέμου (αέρα):","options":["Στο πλάι μου.","Περιμένω να σταματήσει η ροή του αέρα.","Στην πλάτη μου.","Δεν έχει σημασία η κατεύθυνση του αέρα."],"correct":2,"summary":""},{"id":"Α174","question":"Πώς πρέπει να γίνεται η κίνηση εντός χώρου που έχει κατακλυστεί από καπνούς;","options":["Συνίσταται να πραγματοποιείται όσο γίνεται πιο χαμηλά, στο επίπεδο του πατώματος, αν είναι δυνατόν, όπου θα υπάρχει περισσότερος καθαρός ατμοσφαιρικός αέρας.","Συνίσταται να πραγματοποιείται όσο γίνεται πιο υψηλά, όπου θα υπάρχει περισσότερος καθαρός ατμοσφαιρικός αέρας.","Συνίσταται να πραγματοποιείται είτε όσο πιο υψηλά γίνεται, είτε όσο πιο χαμηλά γίνεται.","Κανένα από τα παραπάνω."],"correct":0,"summary":""},{"id":"Α175","question":"Πώς αντιλαμβανόμαστε ότι ο ασθενής έχει χάσει τις αισθήσεις του;","options":["Του ζητάμε να μας μιλήσει.","Του ζητάμε να ανοίξει τα μάτια του.","Του ζητάμε να μας σφίξει τις παλάμες.","Όλα τα παραπάνω."],"correct":3,"summary":""},{"id":"Α176","question":"Όταν ένα άτομο λιποθυμάει προσπαθούμε:","options":["Να το κρατήσουμε όρθιο.","Να το ξαπλώσουμε ανάσκελα.","Να το καθίσουμε σε μια καρέκλα.","Να το βάλουμε σε θέση ανάνηψης.","Κανένα από τα παραπάνω."],"correct":1,"summary":""},{"id":"Α177","question":"Όταν ένα άτομο, ξαφνικά, κάνει σπασμούς προσπαθούμε:","options":["Να σταματήσουμε τους σπασμούς.","Να το μεταφέρουμε στο ιατρείο.","Να κρατήσουμε ανοιχτό το στόμα του.","Να το προστατεύσουμε από τα αντικείμενα που βρίσκονται γύρω του.","Κανένα από τα παραπάνω."],"correct":3,"summary":""},{"id":"Α178","question":"Σε ένα ήπιο περιστατικό ηλεκτροπληξίας πρέπει να ενθαρρύνετε το θύμα να πάει σε γιατρό, γιατί μπορεί να έχει πάθει:","options":["Βλάβη στα μάτια.","Βλάβη στην καρδιά.","Βλάβη στην πύλη εισόδου του ρεύματος.","Βλάβη στην πύλη εξόδου του ρεύματος."],"correct":1,"summary":""},{"id":"Α179","question":"Ο σωστός ρυθμός συμπιέσεων στην ΚΑΡΠ.Α. [εκτός των μωρών κάτω του ενός (1) έτους] είναι:","options":["Μια συμπίεση κάθε δέκα δευτερόλεπτα.","Μια συμπίεση κάθε πέντε δευτερόλεπτα.","Δύο συμπιέσεις κάθε ένα δευτερόλεπτο.","Ο ρυθμός με τον οποίο αναπνέουμε εμείς.","Κανένα από τα παραπάνω."],"correct":2,"summary":""},{"id":"Α180","question":"Η λιποθυμία είναι σύμπτωμα:","options":["Του εμφράγματος του μυοκαρδίου.","Της αναφυλαξίας.","Του αγγειακού εγκεφαλικού επεισοδίου.","Καρδιακής ανακοπής.","Όλα τα παραπάνω."],"correct":4,"summary":""},{"id":"Α181","question":"Το σημαντικότερο για ένα κυτίο Πρώτων Βοηθειών είναι:","options":["Να είναι πιστοποιημένο από αρμόδιο υγειονομικό φορέα.","Να βρίσκεται σε προσβάσιμο χώρο από όλο το προσωπικό.","Να το διαχειρίζεται μόνο εκπαιδευμένο προσωπικό.","Κανένα από τα παραπάνω."],"correct":1,"summary":""}]
+const practicalQuestions = [{"id":"Β1","question":"Εργάζεστε ως Προσωπικό Ιδιωτικής Ασφάλειας σε τράπεζα και κατά την εκτέλεση της υπηρεσίας σας φοράτε στολή χρώματος μαύρου στην οποία έχετε συρράψει διακριτικά που αναγράφουν «Ιδιωτική Αστυνομία - Private Police». Είναι η στολή αυτή κατάλληλη; Τι αναγράφεται στην κονκάρδα του Προσωπικού Ιδιωτικής Ασφάλειας;","options":["Η εν λόγω στολή δεν είναι σύμφωνη με τις διατάξεις του ν.2518/1997, γιατί η στολή του Προσωπικού Ιδιωτικής Ασφάλειας δεν πρέπει να αναγράφει τις λέξεις \"Αστυνομία\", \"Police\".","Το ειδικό διακριτικό σήμα (κονκάρδα) φέρεται στο αριστερό ημιθωράκιο του δικαιούχου.","Στο ειδικό διακριτικό σήμα (κονκάρδα) αναγράφεται η επωνυμία της επιχείρησης και το αρκτικόλεξο Ι.Ε.Π.Υ.Α..","Το ειδικό διακριτικό σήμα φέρει την ένδειξη PRIVATE SECURITY.","Το Προσωπικό Ιδιωτικής Ασφάλειας υποχρεούται να φέρει το δελτίο ταυτότητας και το ειδικό διακριτικό σήμα κατά την εκτέλεση των δραστηριοτήτων του."],"type":"flashcard"},{"id":"Β2","question":"Εργάζεστε ως Προσωπικό Ιδιωτικής Ασφάλειας σε μία εγκατάσταση και σας έχει ανατεθεί η φύλαξη της πύλης εισόδου της εγκατάστασης. Αυτή η θέση εργασίας αποτελεί το πρώτο σημείο επαφής με τους εργαζόμενους και τους επισκέπτες. Ποια πρέπει να είναι τα γενικά στοιχεία της «επαγγελματικής εικόνας» σας και ποια μπορεί να είναι ορισμένα από τα βασικά καθήκοντά σας, όταν εκτελείτε υπηρεσία στην κεντρική είσοδο - πύλη;","options":["Η επιμελημένη εξωτερική εμφάνιση.","Η ετοιμότητα και ο επαγγελματισμός κατά την εκτέλεση των καθηκόντων σας.","Ο αυτοέλεγχος και η αυτοσυγκράτηση.","Ο έλεγχος των εισερχόμενων ατόμων και οχημάτων.","Η καταγραφή σε βιβλίο των επισκεπτών και στοιχείων, όπως η ώρα άφιξής τους, το πρόσωπο ή τμήμα που πρόκειται να επισκεφθούν."],"type":"flashcard"},{"id":"Β3","question":"Εργάζεστε ως Προσωπικό Ιδιωτικής Ασφάλειας σε μια μεγάλη εγκατάσταση. Εκτελώντας πεζή περιπολία, νυχτερινές ώρες, στον περίβολο της εγκατάστασης, αντιλαμβάνεστε την ύπαρξη ενός χαρτοκιβωτίου τυλιγμένου με μονωτική ταινία, το οποίο είναι εγκαταλελειμμένο δίπλα στον περίβολο της εγκατάστασης και η ύπαρξη του εκεί δεν δικαιολογείται. Ποιες είναι ορισμένες από τις ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας δεν αγγίζει το ύποπτο αντικείμενο.","Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον προϊστάμενό του ή το Κέντρο Ελέγχου και την Ελληνική Αστυνομία.","Το Προσωπικό Ιδιωτικής Ασφάλειας διατηρεί ικανή απόσταση από το χαρτοκιβώτιο.","Το Προσωπικό Ιδιωτικής Ασφάλειας καλύπτεται πίσω απο τυχόν υπάρχοντα εμπόδια (π.χ. τοιχίο, κολώνα κ.λπ.).","Το Προσωπικό Ιδιωτικής Ασφάλειας θα πρέπει να διατηρήσει την ψυχραιμία του και σε καμία περίπτωση να μην πανικοβληθεί."],"type":"flashcard"},{"id":"Β4","question":"Εργάζεστε ως Προσωπικό Ιδιωτικής Ασφάλειας και παρέχετε υπηρεσία φύλαξης σε μεγάλο εμπορικό κέντρο. Κατά την εκτέλεση της υπηρεσίας σας δέχεστε απειλητικό τηλεφώνημα από άγνωστο άτομο για τοποθέτηση βόμβας στο εμπορικό κέντρο. Ποιες είναι ορισμένες από τις ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον προϊστάμενό του ή το Κέντρο Ελέγχου και την Ελληνική Αστυνομία, την Πυροσβεστική Υπηρεσία ή άλλες αρμόδιες Αρχές.","Το Προσωπικό Ιδιωτικής Ασφάλειας θα πρέπει να λάβει άμεσα μέτρα αυτοπροστασίας.","Σε περίπτωση εντοπισμού της βόμβας, σε καμία περίπτωση δεν την επεξεργάζεται.","Το Προσωπικό Ιδιωτικής Ασφάλειας θα πρέπει να προσπαθήσει να θέσει στο άτομο που το απειλεί, με ηρεμία, ερωτήματα όπως: Πότε πρόκειται να εκραγεί η βόμβα; Πού τοποθετήθηκε η βόμβα; Πότε τοποθετήθηκε εκεί; Πώς είναι η βόμβα; Τι είδους βόμβα είναι;","Το Προσωπικό Ιδιωτικής Ασφάλειας θα πρέπει να καταγράψει όσα ανέφερε το άτομο αυτό και να συμπληρώσει έντυπο καταγραφής βομβιστικών απειλών."],"type":"flashcard"},{"id":"Β5","question":"Εργάζεστε ως Προσωπικό Ιδιωτικής Ασφάλειας και εκτελείτε περιπολία γύρω από μια εγκατάσταση. Τι μπορεί να περιλαμβάνει ο προσωπικός εξοπλισμός που διαθέτετε;","options":["Σημειωματάριο και στυλό.","Ραδιοτηλέφωνο.","Φακό.","Σφυρίχτρα.","Κουμπί κλήσης βοήθειας."],"type":"flashcard"},{"id":"Β6","question":"Ο Α εργάζεται ως Προσωπικό Ιδιωτικής Ασφάλειας, παρέχοντας υπηρεσία φύλαξης σε αποθήκη επώνυμου Σουπερμάρκετ στην περιοχή της Αττικής κατά τις ώρες 22:00 - 06:00. Κάποια στιγμή, περί ώρα 02:00, περίπου, αντιλαμβάνεται φορτηγό αυτοκίνητο, άνευ πινακίδας και με δύο επιβαίνοντες, να εισέρχεται στον αύλειο χώρο της αποθήκης. Με την απειλή πυροβόλου όπλου αιφνιδιάζουν και ακινητοποιούν τον Α, αφαιρούν προϊόντα και αντικείμενα από την αποθήκη και στη συνέχεια τρέπονται σε φυγή. Τι αδίκημα διαπράττουν οι δράστες και ποιες είναι ορισμένες από τις ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Οι δράστες διαπράττουν το αδίκημα της ληστείας.","Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον προϊστάμενό του ή το Κέντρο Ελέγχου και την Ελληνική Αστυνομία.","Το Προσωπικό Ιδιωτικής Ασφάλειας παρατηρεί και καταγράφει τα χαρακτηριστικά των δραστών και οποιοδήποτε άλλο χρήσιμο στοιχείο.","Το Προσωπικό Ιδιωτικής Ασφάλειας αποφεύγει λάθη, όπως η υπερεκτίμηση των ικανοτήτων του και ο υπερβολικός ενθουσιασμός.","Το Προσωπικό Ιδιωτικής Ασφάλειας συντάσσει σχετική αναφορά και παραμένει στη διάθεση των αρμοδίων δημοσίων Αρχών."],"type":"flashcard"},{"id":"Β7","question":"Ο Α, ο οποίος ανήκει στο Προσωπικό Ιδιωτικής Ασφάλειας και απασχολείται σε Ιδιωτική Επιχείρηση Παροχής Υπηρεσιών Ασφαλείας (Ι.Ε.Π.Υ.Α.), εργάζεται σε βραδινή βάρδια εποχούμενης περιπολίας για την προστασία μίας συγκεκριμένης οικίας. Κατά την εκτέλεση των καθηκόντων του, και ενώ βρίσκεται στην βορειοανατολική πλευρά της οικίας, ενημερώνεται από το Κέντρο Λήψης Σημάτων ότι ενεργοποιήθηκε ο συναγερμός και συγκεκριμένα από σημείο που βρίσκεται στο νοτιοδυτικό άκρο αυτής. Αμέσως, μεταβαίνει στο σημείο και εντοπίζει πλησίον, αλλά εκτός του ιδιωτικού χώρου της κατοικίας, ένα άτομο, τον Β. Στη θέα του Α, ο Β απομακρύνεται από το σημείο με γρήγορο βηματισμό. Ποιες είναι ορισμένες από τις ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει το Κέντρο Λήψης Σημάτων για τις διαπιστώσεις του σχετικά με το σήμα συναγερμού και για την παρουσία του Β στο σημείο.","Το Προσωπικό Ιδιωτικής Ασφάλειας οφείλει να βρίσκεται σε αυξημένη ετοιμότητα, να λάβει τα αναγκαία μέτρα αυτοπροστασίας, όντας σε θέση να κάνει χρήση όλου του εξοπλισμού του (ασύρματος, κουμπί κλήσης βοήθειας).","Το Προσωπικό Ιδιωτικής Ασφάλειας θα ελέγξει την περίμετρο του ακινήτου και τις εισόδους, αναζητώντας σημάδια παράνομης εισόδου.","Το Προσωπικό Ιδιωτικής Ασφάλειας παρατηρεί και καταγράφει τα χαρακτηριστικά του Β και οποιοδήποτε άλλο χρήσιμο στοιχείο.","Το Προσωπικό Ιδιωτικής Ασφάλειας συντάσσει σχετική αναφορά."],"type":"flashcard"},{"id":"Β8","question":"Εργάζεστε ως Προσωπικό Ιδιωτικής Ασφάλειας στην είσοδο μια πολυεθνικής εταιρείας, όπου υπάρχει εγκατεστημένο μηχάνημα X-RAY για τον έλεγχο των ατομικών αποσκευών των εισερχομένων επισκεπτών στην εγκατάσταση. Ένα άτομο, το οποίο πρόκειται να επισκεφθεί υπάλληλο της πολυεθνικής, προσέρχεται στην είσοδο και επιθυμεί να εισέλθει στο εσωτερικό της εγκατάστασης. Αμέσως, απευθύνεστε στον επισκέπτη και του ζητάτε να τοποθετήσει την τσάντα που φέρει μαζί του στο μηχάνημα X-RAY για έλεγχο. Αν το άτομο αρνηθεί τον έλεγχο, ισχυριζόμενο ότι η ενέργεια αυτή δεν είναι νομικά επιτρεπτή, πώς θα ενεργήσετε;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον προϊστάμενό του.","Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον υπάλληλο που πρόκειται να δεχθεί την επίσκεψη.","Το Προσωπικό Ιδιωτικής Ασφάλειας δεν διενεργεί τον έλεγχο, χωρίς την συναίνεση του επισκέπτη.","Το Προσωπικό Ιδιωτικής Ασφάλειας, δεν επιτρέπει την είσοδο στην εταιρεία, μέχρι να λάβει σχετικές οδηγίες.","Το Προσωπικό Ιδιωτικής Ασφάλειας διατηρεί την ψυχραιμία του."],"type":"flashcard"},{"id":"Β9","question":"Εργάζεστε ως Προσωπικό Ιδιωτικής Ασφάλειας και εκτελείτε απογευματινή υπηρεσία σε βιοτεχνία παραγωγής ρούχων. Είστε νέος εργαζόμενος στη βιοτεχνία, καθώς ξεκινήσατε να εργάζεστε εκεί την προηγούμενη εβδομάδα και δεν έχετε εξοικειωθεί ακόμα με τον χώρο εργασίας σας. Λόγω βλάβης σε μηχάνημα παραγωγής, προκαλείται πυρκαγιά στη βιοτεχνία που, εφόσον εξελιχθεί, θα κινδυνεύσει η ζωή των εργαζομένων. Ποιες είναι ορισμένες από τις ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας απομακρύνει τους εργαζόμενους και τους επισκέπτες που, ενδεχομένως, βρίσκονται στη βιοτεχνία, εφόσον απαιτείται.","Το Προσωπικό Ιδιωτικής Ασφάλειας εκτιμά την κατάσταση, διατηρεί την ψυχραιμία του και προσπαθεί να κατασβέσει την πυρκαγιά, αν είναι εφικτό.","Το Προσωπικό Ιδιωτικής Ασφάλειας απομακρύνεται, αν η πυρκαγιά είναι μεγάλης έκτασης.","Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον προϊστάμενο του ή το Κέντρο Ελέγχου και την Πυροσβεστική Υπηρεσία.","Το Προσωπικό Ιδιωτικής Ασφάλειας συντάσσει αναφορά για το συμβάν."],"type":"flashcard"},{"id":"Β10","question":"Είστε Προσωπικό Ιδιωτικής Ασφάλειας σε ιδιωτική κλινική κατά το ωράριο 22:00 - 06:00. Περί ώρα 23:30 διαπιστώνετε οτι ένα άτομο προβαίνει σε κλοπή ιατρικού εξοπλισμού μεγάλης αξίας από το υπόγειο της κλινικής και τον μεταφέρει σε όχημα που βρίσκεται σταθμευμένο ακριβώς έξω από την κλινική. Ποιες είναι ορισμένες από τις ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας έχει δικαίωμα να συλλάβει το άτομο.","Το Προσωπικό Ιδιωτικής Ασφάλειας δεν έχει υποχρέωση να συλλάβει το άτομο.","Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον προϊστάμενό του ή το Κέντρο Ελέγχου και την Ελληνική Αστυνομία.","Το Προσωπικό Ιδιωτικής Ασφάλειας οφείλει να δείξει αυτοσυγκράτηση και να λάβει μέτρα αυτοπροστασίας.","Το Προσωπικό Ιδιωτικής Ασφάλειας παρατηρεί και καταγράφει τα χαρακτηριστικά του ατόμου και του οχήματος και οποιοδήποτε άλλο χρήσιμο στοιχείο."],"type":"flashcard"},{"id":"Β11","question":"Είστε Προσωπικό Ιδιωτικής Ασφάλειας σε μεγάλο εμπορικό κέντρο. Στην εγκατάσταση έχει ξεσπάσει σοβαρή πυρκαγιά και έχετε λάβει οδηγίες για εκκένωση, σύμφωνα με το σχέδιο αντιμετώπισης εκτάκτου ανάγκης. Οδηγείτε ένα πλήθος είκοσι (20) ατόμων στη μοναδική έξοδο κινδύνου που μπορείτε να χρησιμοποιήσετε, προκειμένου να μη χαθούν ανθρώπινες ζωές. Στην προσπάθεια σας να ανοίξετε την έξοδο κινδύνου, διαπιστώνετε ότι ένα υπερπολυτελές αυτοκίνητο είναι σταθμευμένο εξωτερικά της εξόδου κινδύνου με αποτέλεσμα να μην είναι δυνατή η έξοδος των ατόμων. Ποιες είναι ορισμένες από τις ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας; Έχετε δικαίωμα από τον νόμο να προσπαθήσετε να μετακινήσετε το αυτοκίνητο ακόμα και αν προκληθεί φθορά σε αυτό, προκειμένου να εκκενωθεί η εγκατάσταση και να σωθούν τα άτομα;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας έχει δικαίωμα, υπό προϋποθέσεις (Άρθρο 25 Π.Κ.), να μετακινήσει το αυτοκίνητο ακόμα και αν προκληθεί φθορά σε αυτό, προκειμένου να εκκενωθεί η εγκατάσταση και να σωθούν τα άτομα, καθώς πρόκειται για κατάσταση έκτακτης ανάγκης που αίρει το άδικο.","Το Προσωπικό Ιδιωτικής Ασφάλειας συντάσσει σχετική αναφορά.","Το Προσωπικό Ιδιωτικής Ασφάλειας ενεργεί με γνώμονα τη διαφύλαξη της ζωής και της σωματικής ακεραιότητας του, όσο και της ζωής και της σωματικής ακεραιότητας των συναδέλφων του, καθώς και των υπολοίπων πολιτών.","Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον προϊστάμενό του ή το Κέντρο Ελέγχου και την Πυροσβεστική Υπηρεσία.","Το Προσωπικό Ιδιωτικής Ασφάλειας διατηρεί την ψυχραιμία του και αποφεύγει τον πανικό."],"type":"flashcard"},{"id":"Β12","question":"Είστε Προσωπικό Ιδιωτικής Ασφάλειας και εκτελείτε καθήκοντα φύλαξης με όχημα περιπολίας, προκειμένου να ελέγχετε σε περιοδικά χρονικά διαστήματα τις ακόλουθες εγκαταστάσεις: -Ένα κοσμηματοπωλείο. -Ένα κατάστημα ρούχων. -Την οικία του Πρέσβη ευρωπαϊκής χώρας στην Ελλάδα. Διερχόμενος από την οικία του Πρέσβη παρατηρείτε ένα αυτοκίνητο, με δύο (2) άτομα εντός αυτού, να έχει σταματήσει και να φωτογραφίζει την οικία. Ποιες είναι ορισμένες από τις ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας παρατηρεί και καταγράφει τα χαρακτηριστικά των ατόμων και του οχήματος.","Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον προϊστάμενό του ή το Κέντρο Ελέγχου και την Ελληνική Αστυνομία και ζητά τη συνδρομή άλλων συναδέλφων του, εφόσον απαιτείται.","Το Προσωπικό Ιδιωτικής Ασφάλειας είναι σε αυξημένη ετοιμότητα διατηρώντας ασφαλή απόσταση.","Το Προσωπικό Ιδιωτικής Ασφάλειας είναι σε θέση να κάνει χρήση όλου του εξοπλισμού του (π.χ. ασύρματος).","Το Προσωπικό Ιδιωτικής Ασφάλειας ενεργεί με γνώμονα τη διαφύλαξη της ζωής και της σωματικής ακεραιότητας του, όσο και της ζωής και της σωματικής ακεραιότητας των συναδέλφων του, καθώς και των υπολοίπων πολιτών."],"type":"flashcard"},{"id":"Β13","question":"Είστε Προσωπικό Ιδιωτικής Ασφάλειας σε υποκατάστημα τράπεζας, τέλη του μήνα, διάστημα πληρωμής συντάξεων και βρίσκεστε στο εσωτερικό αυτού. Ξαφνικά, τρεις (3) δράστες, με αλλοιωμένα τα χαρακτηριστικά των προσώπων τους (φορώντας κουκούλες) και κρατώντας βαρύ οπλισμό (3 τυφέκια Kalashnikov), εισέρχονται εντός της τράπεζας, φωνάζοντας ληστεία, ενώ ταυτόχρονα πυροβολούν μια φορά στον αέρα. Ποιες είναι ορισμένες από τις ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας μετά την αποχώρηση των δραστών;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον προϊστάμενό του και την Ελληνική Αστυνομία για στοιχεία όπως ο αριθμός των δραστών, η κατεύθυνση και ο τρόπος διαφυγής τους, τα χαρακτηριστικά των δραστών (π.χ. σωματική διάπλαση, ομιλία, τρόπος βάδισης).","Το Προσωπικό Ιδιωτικής Ασφάλειας, αν διαπιστώσει οτι υπάρχουν τραυματίες, καλεί το Ε.Κ.Α.Β..","Το Προσωπικό Ιδιωτικής Ασφάλειας αποκλείει τον χώρο του εγκλήματος για τη διαφύλαξη πειστηρίων και ιχνών.","Το Προσωπικό Ιδιωτικής Ασφάλειας αναζητά και καταγράφει στοιχεία μαρτύρων.","Το Προσωπικό Ιδιωτικής Ασφάλειας απομακρύνει αναρμόδια άτομα (περιοίκους, περαστικούς, κ.λπ.) εκτός της ζώνης αποκλεισμού και απαγορεύει την πρόσβαση στον χώρο σε μη εξουσιοδοτημένα άτομα, εκτός αν τίθεται θέμα διάσωσης ανθρώπινης ζωής."],"type":"flashcard"},{"id":"Β14","question":"Είστε Προσωπικό Ιδιωτικής Ασφάλειας σε δημόσια Υπηρεσία. Κατά τη διάρκεια της υπηρεσίας σας, και ενώ ο οργανισμός είναι ανοιχτός για το κοινό, συντελείται ισχυρός σεισμός, όπου μεταξύ άλλων προκαλεί ζημιές και καταρρεύσεις σε κάποια σημεία του κτηρίου. Ποιες οι βασικές ενέργειές σας κατά τη διάρκεια του σεισμικού φαινομένου και μετά τον σεισμό;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας διατηρεί την ψυχραιμία του κατά τη διάρκεια του σεισμού.","Το Προσωπικό Ιδιωτικής Ασφάλειας καλύπτεται κάτω από ανθεκτικό έπιπλο κατά τη διάρκεια του σεισμού.","Το Προσωπικό Ιδιωτικής Ασφάλειας, μετά τον σεισμό, ενημερώνει την Ελληνική Αστυνομία, την Πυροσβεστική Υπηρεσία και το Ε.Κ.Α.Β., εφόσον απαιτείται.","Το Προσωπικό Ιδιωτικής Ασφάλειας καταφεύγει σε ανοιχτό χώρο, μετά τον σεισμό.","Το Προσωπικό Ιδιωτικής Ασφάλειας, μετά τον σεισμό, απομακρύνεται από το κτήριο μέσω του κλιμακοστασίου και όχι με τη χρήση ανελκυστήρα."],"type":"flashcard"},{"id":"Β15","question":"Είστε Προσωπικό Ιδιωτικής Ασφάλειας στις εγκαταστάσεις μεγάλης ιδιωτικής επιχείρησης. Ξεσπά πυρκαγιά στον χώρο υποδοχής του κτηρίου, την οποία την αντιλαμβάνεστε αμέσως, μόλις εκδηλώνεται. Προσπαθείτε με τη χρήση του κατάλληλου πυροσβεστήρα να την αντιμετωπίσετε στο αρχικό της στάδιο, προκειμένου να μην επεκταθεί. Ποιες είναι ορισμένες από τις ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας και ποιος είναι ένας τύπος πυροσβεστήρα/ων που είναι κατάλληλος/οι για να κατασβήσουν στερεές καύσιμες ύλες που καίγονται στην εγκατάσταση (π.χ. ξυλεία, χαρτικά, πλαστικά-ελαστικά);","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας μπορεί να χρησιμοποιήσει πυροσβεστήρα ξηράς σκόνης.","Το Προσωπικό Ιδιωτικής Ασφάλειας, εφόσον το συμβάν κλιμακωθεί ταχύτατα, μπορεί να ενεργοποιήσει το χειροκίνητο σύστημα συναγερμού πυρκαγιάς.","Το Προσωπικό Ιδιωτικής Ασφάλειας εκτιμά την κατάσταση και ενεργεί πάντοτε με γνώμονα την ασφάλειά του.","Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον προϊστάμενό του ή το Κέντρο Ελέγχου και την Πυροσβεστική Υπηρεσία (στα τηλέφωνα 199 ή 112) και παρέχει τις κατά το δυνατόν ακριβέστερες πληροφορίες.","Το Προσωπικό Ιδιωτικής Ασφάλειας απομακρύνεται από τον χώρο, αν το συμβάν δεν ελεγχθεί πλήρως ή κριθεί πως δεν είναι ασφαλής η προσπάθεια κατάσβεσης."],"type":"flashcard"},{"id":"Β16","question":"Είστε Προσωπικό Ιδιωτικής Ασφάλειας, με καθήκοντα στατικής φύλαξης σε εγκατάσταση εργοστασίου παρασκευής τυποποιημένων τροφίμων. Μαζί σας εκτελεί υπηρεσία και έτερος συνάδελφός σας. Ξαφνικά, αντιλαμβάνεστε ένα άτομο στο πεδίο ευθύνης σας και συγκεκριμένα στο εσωτερικό της εγκατάστασης. Καλείτε το άτομο να σταματήσει, για να προχωρήσετε σε ερωτήσεις. Το άτομο προσπαθεί να αποφύγει τις ερωτήσεις σας και στη συνέχεια υβρίζει και δεν ακολουθεί τις οδηγίες σας: Ποιες θα είναι οι βασικές ενέργειες σας, σε συνεργασία με τον συνάδελφο, σε σχέση με τη διαχείριση του συγκεκριμένου περιστατικού;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας κατά την προσέγγιση του ατόμου, διατηρεί ασφαλή απόσταση και εφαρμόζει την τεχνική της ορθής γωνίας.","Το Προσωπικό Ιδιωτικής Ασφάλειας διατηρεί την ψυχραιμία του.","Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον προϊστάμενό του ή το Κέντρο Ελέγχου και την Ελληνική Αστυνομία και ζητά τη συνδρομή άλλων συναδέλφων του, εφόσον απαιτείται.","Το Προσωπικό Ιδιωτικής Ασφάλειας παρατηρεί και καταγράφει στοιχεία του ατόμου.","Το Προσωπικό Ιδιωτικής Ασφάλειας δίνει ιδιαίτερη προσοχή στα χέρια του ατόμου και δεν στρέφει την πλάτη του σε αυτό."],"type":"flashcard"},{"id":"Β17","question":"Είστε Προσωπικό Ιδιωτικής Ασφάλειας, με καθήκοντα στατικής φύλαξης, σε πολυώροφο κτήριο ενός μαιευτηρίου. Ξαφνικά διαπιστώνετε ότι έχει διακοπεί η παροχή ηλεκτρικής ενέργειας στο κτήριο, αποτέλεσμα της οποίας είναι να εγκλωβιστούν άτομα, εργαζόμενοι και επισκέπτες, εντός του ανελκυστήρα τα οποία πανικοβάλλονται και καλούν σε βοήθεια, φωνάζοντας έντονα ότι νιώθουν ασφυξία. Ποιες είναι ορισμένες από τις ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τα εγκλωβισμένα άτομα οτι 17 υπάρχει συνεχής ροή αέρα.","Το Προσωπικό Ιδιωτικής Ασφάλειας ενημερώνει τον προϊστάμενό του ή το Κέντρο Ελέγχου και την Πυροσβεστική Υπηρεσία.","Το Προσωπικό Ιδιωτικής Ασφάλειας ζητά από τα εγκλωβισμένα άτομα να διατηρήσουν την ψυχραιμία τους.","Το Προσωπικό Ιδιωτικής Ασφάλειας επικοινωνεί με τα εγκλωβισμένα άτομα, και συλλέγει πληροφορίες π.χ. πόσος είναι ο αριθμός των εγκλωβισμένων.","Το Προσωπικό Ιδιωτικής Ασφάλειας δεν προσπαθεί να ανοίξει τη θύρα του ανελκυστήρα, γιατί υπάρχει κίνδυνος τραυματισμού των εγκλωβισμένων ατόμων."],"type":"flashcard"},{"id":"Β18","question":"Προσωπικό Ιδιωτικής Ασφάλειας (Α και Β) εκτελεί μεταφορά χρημάτων από το κεντρικό κατάστημα της τράπεζας σε ένα μικρότερο περιφερειακό κατάστημα στην ίδια πόλη. Το ανωτέρω προσωπικό, πέραν του εξοπλισμού του, επιτρέπεται να οπλοφορεί και η εταιρεία στην οποία εργάζεται έχει σχετικές άδειες οπλοκατοχής. Μετά τη λήξη της υπηρεσίας του ο Α, επειδή και την επομένη ημέρα θα εκτελούσε μεταφορά χρημάτων, συνεννοήθηκε τηλεφωνικά με τον Γ, ο οποίος είναι ο νόμιμος κάτοχος του οπλισμού της Ι.Ε.Π.Υ.Α. στην οποία εργάζονται οι Α και Β, να κρατήσει το όπλο στην οικία του. Ποιες είναι οι νόμιμες ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας (Α και Β) παραλαμβάνει το όπλο κατά την ανάληψη της υπηρεσίας του.","Το Προσωπικό Ιδιωτικής Ασφάλειας (Α και Β) οφείλει να παραδώσει το όπλο στον Γ αμέσως μετά τη λήξη της υπηρεσίας.","Τα όπλα πρέπει να φυλάσσονται με ευθύνη του Γ σε ειδικό, προς τούτο, χώρο της επιχείρησης.","Το Προσωπικό Ιδιωτικής Ασφάλειας (Α και Β) πρέπει να διαθέτει άδεια οπλοφορίας.","Για την παράδοση και παραλαβή του οπλισμού τηρείται ειδικό βιβλίο χρέωσης και αποχρέωσης οπλισμού."],"type":"flashcard"},{"id":"Β19","question":"Ο Α εργάζεται ως Προσωπικό Ιδιωτικής Ασφάλειας σε αγώνα καλαθοσφαίρισης και έχει οριστεί να πραγματοποιεί έλεγχο προσερχόμενων φιλάθλων σε θύρα της αθλητικής εγκατάστασης. Κατά τη διάρκεια της σωματικής έρευνας, ο Π, προσερχόμενος φίλαθλος, αντιδρά λέγοντας στον Α ότι η διαδικασία αυτή είναι παράνομη και τον απειλεί αρνούμενος οποιονδήποτε έλεγχο. Υπό ποιες προυποθέσεις διενεργείται ο έλεγχος και ποιες είναι οι νόμιμες ενέργειες που δύναται να προβεί το Προσωπικό Ιδιωτικής Ασφάλειας;","options":["Ο υποχρεωτικός σωματικός έλεγχος διενεργείται από την ΕΛ.ΑΣ..","Ο έλεγχος του φιλάθλου από Προσωπικό Ιδιωτικής Ασφάλειας μπορεί να πραγματοποιηθεί μόνο κατόπιν συναίνεσης του φιλάθλου.","Ο έλεγχος μπορεί να πραγματοποιηθεί από Προσωπικό Ιδιωτικής Ασφάλειας του ιδίου φύλου.","Εφόσον ο φίλαθλος αρνηθεί τον σωματικό έλεγχο στην Αστυνομική Αρχή τότε η Αστυνομική Αρχή ή το Προσωπικό Ιδιωτικής Ασφάλειας δικαιούται να του απαγορεύσει την είσοδο.","Το Προσωπικό Ιδιωτικής Ασφάλειας επιδεικνύει κόσμια συμπεριφορά, στον προσερχόμενο φίλαθλο."],"type":"flashcard"},{"id":"Β20","question":"Είστε χειριστής στο Κέντρο Λήψης Σημάτων μιας Ι.Ε.Π.Υ.Α. στην οποία εργάζεστε. Κατά την εκτέλεση της υπηρεσίας σας στο Κέντρο Λήψης Σημάτων λαμβάνετε σήμα συναγερμού από μια οικία που φυλάσσεται από την Ι.Ε.Π.Υ.Α. στην οποία εργάζεστε. Ποιες είναι ορισμένες από τις ενέργειες που δύναται να προβεί ο χειριστής του Κέντρου Λήψης Σημάτων;","options":["Επαληθεύει το σήμα συναγερμού.","Οργανώνει και συντονίζει τις ενέργειες του Προσωπικού Ιδιωτικής Ασφάλειας που ενδεχομένως εκτελεί στατική φύλαξη στην οικία ή των εποχούμενων φυλάξεων στον τομέα ευθύνης των οποίων ανήκει η οικία.","Ενημερώνει τις αρμόδιες δημόσιες Αρχές (ΕΛ.ΑΣ., Πυροσβεστική Υπηρεσία).","Ενημερώνει το πρόσωπο στο οποίο παρέχονται οι υπηρεσίες φύλαξης.","Καταγράφει όλα τα συμβάντα και στοιχεία, όπως η ημερομηνία, η ώρα και ο τόπος του συμβάντος."],"type":"flashcard"},{"id":"Β21","question":"Εργάζεστε ως Προσωπικό Ιδιωτικής Ασφάλειας, παρέχοντας υπηρεσίες προστασίας φυσικών προσώπων. Το φυσικό πρόσωπο που συνοδεύετε, αποφασίζει να μετακινηθεί πεζό προς ένα σημείο. Ποιοι είναι ορισμένοι κανόνες που πρέπει να τηρεί το Προσωπικό Ιδιωτικής Ασφάλειας, ως μέλος της Συνοδευτικής Ομάδας Ασφαλείας του προστατευόμενου προσώπου;","options":["Το Προσωπικό Ιδιωτικής Ασφάλειας να βρίσκεται σε συνεχή επαγρύπνηση.","Το Προσωπικό Ιδιωτικής Ασφάλεια παρατηρεί οτιδήποτε συμβαίνει γύρω από το προστατευόμενο πρόσωπο.","Το Προσωπικό Ιδιωτικής Ασφάλειας δεν εγκαταλείπει για οποιοδήποτε λόγο την περιοχή ευθύνης γύρω από το προστατευόμενο πρόσωπο.","Στην περίπτωση ενός περιστατικού το οποίο ενέχει κίνδυνο, το Προσωπικό Ιδιωτικής Ασφάλειας πρέπει πρώτα από όλα να καλύψει το προστατευόμενο πρόσωπο, δημιουργώντας μία ασπίδα γύρω του.","Στην περίπτωση ενός περιστατικού το οποίο ενέχει κίνδυνο, τα μέλη της Συνοδευτικής Ομάδας Ασφάλειας πρέπει να φυγαδεύσουν άμεσα το προστατευόμενο πρόσωπο προς μία ασφαλή τοποθεσία."],"type":"flashcard"}];;
+
+let current=0, score=0, wrong=0, selected=null, revealed=false, phase='intro';
+const answers = new Array(questions.length).fill(null); // null=unanswered, true=correct, false=wrong
+const answeredSelections = new Array(questions.length).fill(null); // which option was selected
+let pendingAnswer = null; // selected but not yet confirmed
+let practicalQueue = [];
+let practicalQueuePos = 0;
+let practicalRevealed = false;
+let practicalIsRepeat = false;
+let practicalAssessments = [];
+let practicalDone = false;
+let confirmed = false;    // confirmation submitted
+let skipped = new Set();  // skipped question indices
+
+// ── Sidebar update ──────────────────────────────────────────────────────────
+function updateSidebar(){
+  document.getElementById('s-cur').textContent = questions[current]?.id || '—';
+  document.getElementById('s-cor').textContent = score;
+  document.getElementById('s-wr').textContent  = wrong;
+  document.getElementById('s-rem').textContent = questions.length - current - (revealed?1:0);
+  const answered = score + wrong;
+  const pct = answered > 0 ? Math.round((score/answered)*100) : 0;
+  document.getElementById('acc-fill').style.width = pct + '%';
+  document.getElementById('acc-fill').style.background = pct>=70?'var(--green)':pct>=40?'var(--gold)':'var(--red)';
+  document.getElementById('acc-txt').textContent = answered>0 ? pct+'% ('+answered+' απαντήθηκαν)' : '—';
+}
+
+// ── Jump to question ────────────────────────────────────────────────────────
+function jumpTo(){
+  const val = document.getElementById('jump-input').value.trim().toUpperCase();
+  // In practical mode: handle Β questions
+  if(phase === 'practical'){
+    const pidx = practicalQuestions.findIndex(q => q.id.toUpperCase() === val);
+    const msg = document.getElementById('jump-msg');
+    if(pidx === -1){ msg.textContent='✗ Δεν βρέθηκε: '+val; msg.style.color='var(--red)'; return; }
+    jumpToPractical(pidx); msg.textContent=''; return;
+  }
+  const idx = questions.findIndex(q => q.id.toUpperCase() === val || q.id === val);
+  const msg = document.getElementById('jump-msg');
+  if(idx === -1){
+    msg.textContent = '✗ Δεν βρέθηκε: ' + val;
+    msg.style.color='var(--red)';
+    return;
+  }
+  current = idx; phase = 'quiz';
+  if(answers[idx] !== null){
+    selected = answeredSelections[idx]; revealed = true;
+  } else {
+    selected = null; revealed = false; pendingAnswer=null; confirmed=false;
+  }
+  msg.textContent = ''; render();
+  document.getElementById('jump-input').value='';
+}
+document.addEventListener('keydown', e => {
+  if(e.key==='Enter' && document.activeElement.id==='jump-input') jumpTo();
+});
+
+// ── Main render ─────────────────────────────────────────────────────────────
+function render(){
+  const el  = document.getElementById('main-content');
+  const hdr = document.getElementById('hdr-score');
+  const pw  = document.getElementById('progress-wrap');
+  const sb  = document.getElementById('sidebar');
+
+  if(phase==='practical'){
+    document.querySelector('.header').style.display='flex';
+    hdr.style.display='flex'; pw.style.display='none'; sb.style.display='block';
+    document.getElementById('home-btn').style.display='inline-flex';
+    document.getElementById('q-grid-card').style.display='none';
+    document.getElementById('p-grid-card').style.display='block';
+    // Hide stats cards in sidebar
+    document.querySelectorAll('#sidebar .sidebar-card').forEach(c=>c.style.display='none');
+    document.querySelector('#sidebar .jump-card').style.display='block';
+    document.getElementById('jump-input').placeholder='π.χ. Β11';
+    setTimeout(renderPracticalGrid, 0);
+
+    const total    = practicalQueue.length;
+    const pos      = practicalQueuePos;
+    const qi       = practicalQueue[pos];
+    const pq       = practicalQuestions[qi];
+    const assessed = practicalAssessments[qi];
+    const knew     = practicalQueue.filter(i=>practicalAssessments[i]===true).length;
+    const dontKnow = practicalQueue.filter(i=>practicalAssessments[i]===false).length;
+    const done     = practicalQueue.filter(i=>practicalAssessments[i]!==null).length;
+    const progressPct = Math.round((done / total) * 100);
+    // Global stats (all 21) — used in summary screen
+    const globalTotal   = practicalQuestions.length;
+    const globalKnew    = practicalAssessments.filter(x=>x===true).length;
+    const globalDontKnow= practicalAssessments.filter(x=>x===false).length;
+    const globalSkipped = practicalAssessments.filter(x=>x==='skip').length;
+
+    // ── Summary screen (all assessed) ────────────────────────────────────────
+    const allDone = practicalDone;
+    if(allDone){
+      const repeatCount = globalDontKnow + globalSkipped;
+      el.innerHTML = `
+        <div style="max-width:520px;margin:2rem auto;padding:1rem;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:0.5rem;">🏁</div>
+          <h3 style="font-family:'Lora',Georgia,serif;color:var(--gold);margin-bottom:1.5rem;">
+            Αποτελέσματα Πρακτικού Μέρους
+          </h3>
+          <div style="display:flex;gap:1rem;justify-content:center;margin-bottom:1.5rem;flex-wrap:wrap;">
+            <div style="background:var(--card);border:1px solid rgba(52,211,153,0.4);border-radius:var(--radius);padding:1rem 1.5rem;">
+              <div style="font-size:1.8rem;font-weight:800;color:#34d399;">${globalKnew}</div>
+              <div style="font-size:0.75rem;color:var(--text3);">Το ήξερα ✓</div>
+            </div>
+            <div style="background:var(--card);border:1px solid rgba(239,68,68,0.4);border-radius:var(--radius);padding:1rem 1.5rem;">
+              <div style="font-size:1.8rem;font-weight:800;color:var(--red);">${globalDontKnow}</div>
+              <div style="font-size:0.75rem;color:var(--text3);">Δεν το ήξερα ✗</div>
+            </div>
+            <div style="background:var(--card);border:1px solid rgba(124,58,237,0.4);border-radius:var(--radius);padding:1rem 1.5rem;">
+              <div style="font-size:1.8rem;font-weight:800;color:#9f67ff;">${globalSkipped}</div>
+              <div style="font-size:0.75rem;color:var(--text3);">Παράβλεψη →</div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border2);border-radius:var(--radius);padding:1rem 1.5rem;">
+              <div style="font-size:1.8rem;font-weight:800;color:var(--gold);">${Math.round(globalKnew/globalTotal*100)}%</div>
+              <div style="font-size:0.75rem;color:var(--text3);">Ποσοστό</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+            ${repeatCount > 0 ? `<button onclick="startPracticalRepeat()" style="padding:0.75rem 1.5rem;background:var(--red);border:none;border-radius:10px;color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;">🔁 Επανάληψη ${repeatCount} σεναρίων</button>` : ''}
+            <button onclick="startPractical()" style="padding:0.75rem 1.5rem;background:var(--bg);border:1px solid var(--border2);border-radius:10px;color:var(--text2);font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;">Από την αρχή</button>
+            <button onclick="goHome()" style="padding:0.75rem 1.5rem;background:var(--gold);border:none;border-radius:10px;color:#0b0d14;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;">Αρχική →</button>
+          </div>
+        </div>`;
+      return;
+    }
+
+    // ── Flashcard screen ──────────────────────────────────────────────────────
+    el.innerHTML = `
+      <div style="max-width:660px;margin:0 auto;padding:1.5rem 1rem;">
+
+        <!-- Progress bar -->
+        <div style="background:var(--border2);border-radius:4px;height:5px;margin-bottom:0.75rem;overflow:hidden;">
+          <div style="background:var(--gold);height:100%;width:${progressPct}%;transition:width 0.4s;border-radius:4px;"></div>
+        </div>
+
+        <!-- Header row -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem;">
+          <span style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);">
+            ${practicalIsRepeat ? '🔁 Επανάληψη' : 'Πρακτικό Μέρος'}
+            ${done>0 ? ' · <span style="color:#34d399;">'+knew+' ✓</span> <span style="color:var(--red);">'+dontKnow+' ✗</span>'+(practicalQueue.filter(i=>practicalAssessments[i]==='skip').length>0?' <span style="color:#9f67ff;">'+practicalQueue.filter(i=>practicalAssessments[i]==='skip').length+' →</span>':'') : ''}
+          </span>
+          <span style="font-size:0.85rem;font-weight:700;color:var(--gold);">${pos+1} / ${total}</span>
+        </div>
+
+        <!-- Scenario card -->
+        <div style="background:var(--card);border:1px solid var(--border2);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.1rem;">
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin-bottom:0.65rem;">
+            ${pq.id} — Σενάριο
+          </div>
+          <p style="font-size:0.92rem;line-height:1.75;color:var(--text);margin:0;">${pq.question}</p>
+        </div>
+
+        ${!practicalRevealed ? `
+          <!-- Reveal button -->
+          <div style="text-align:center;">
+            <button onclick="practicalReveal()" style="padding:0.875rem 2.5rem;background:var(--gold);border:none;border-radius:10px;color:#0b0d14;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:0.02em;">
+              Εμφάνιση Απαντήσεων ↓
+            </button>
+          </div>
+        ` : `
+          <!-- Answers -->
+          <div style="background:var(--card);border:1px solid rgba(52,211,153,0.25);border-radius:var(--radius);padding:1.1rem;margin-bottom:1.1rem;">
+            <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#34d399;margin-bottom:0.75rem;">✓ Ενδεικτικές Απαντήσεις</div>
+            ${pq.options.map((opt,i)=>`
+              <div style="display:flex;gap:0.75rem;margin-bottom:0.5rem;padding:0.55rem 0.75rem;background:rgba(52,211,153,0.06);border-radius:8px;border:1px solid rgba(52,211,153,0.12);">
+                <span style="font-weight:800;color:#34d399;min-width:1.3rem;font-size:0.82rem;">${'ΑΒΓΔΕ'[i]}</span>
+                <span style="font-size:0.86rem;color:var(--text);line-height:1.5;">${opt}</span>
+              </div>`).join('')}
+          </div>
+
+          ${assessed === null ? `
+            <!-- Self-assessment buttons -->
+            <div style="text-align:center;margin-bottom:0.9rem;">
+              <div style="font-size:0.72rem;color:var(--text3);margin-bottom:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Το ήξερες;</div>
+              <div style="display:flex;gap:0.75rem;justify-content:center;">
+                <button onclick="practicalAssess(true)"
+                  style="padding:0.65rem 1.6rem;background:rgba(52,211,153,0.15);border:1.5px solid #34d399;border-radius:9px;color:#34d399;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s;"
+                  onmouseover="this.style.background='rgba(52,211,153,0.28)'" onmouseout="this.style.background='rgba(52,211,153,0.15)'">
+                  Το ήξερα ✓
+                </button>
+                <button onclick="practicalAssess(false)"
+                  style="padding:0.65rem 1.6rem;background:rgba(239,68,68,0.12);border:1.5px solid var(--red);border-radius:9px;color:var(--red);font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s;"
+                  onmouseover="this.style.background='rgba(239,68,68,0.25)'" onmouseout="this.style.background='rgba(239,68,68,0.12)'">
+                  Δεν το ήξερα ✗
+                </button>
+                <button onclick="practicalAssess('skip')"
+                  style="padding:0.65rem 1.3rem;background:rgba(124,58,237,0.12);border:1.5px solid #7c3aed;border-radius:9px;color:#9f67ff;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s;"
+                  onmouseover="this.style.background='rgba(124,58,237,0.25)'" onmouseout="this.style.background='rgba(124,58,237,0.12)'">
+                  Παράβλεψη →
+                </button>
+              </div>
+            </div>
+          ` : `
+            <!-- Post-assessment badge + navigation -->
+            <div style="text-align:center;margin-bottom:0.75rem;">
+              <span style="font-size:0.8rem;font-weight:700;padding:0.3rem 0.9rem;border-radius:20px;
+                ${assessed ? 'background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.4);' : 'background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.35);'}">
+                ${assessed ? '✓ Το ήξερες' : '✗ Δεν το ήξερες'}
+              </span>
+            </div>
+            <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+              ${pos>0 ? `<button onclick="practicalNavQ(-1)" style="padding:0.6rem 1.3rem;background:var(--bg);border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit;">← Προηγούμενο</button>` : ''}
+              ${pos < total-1
+                ? `<button onclick="practicalNavQ(1)" style="padding:0.6rem 1.6rem;background:var(--gold);border:none;border-radius:8px;color:#0b0d14;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;">Επόμενο →</button>`
+                : `<button onclick="practicalDone=true;render()" style="padding:0.6rem 1.6rem;background:var(--gold);border:none;border-radius:8px;color:#0b0d14;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;">Αποτελέσματα 🏁</button>`
+              }
+            </div>
+          `}
+        `}
+      </div>`;
+    return;
+  }
+
+  if(phase==='splash'){
+    hdr.style.display='none'; pw.style.display='none'; sb.style.display='none';
+    document.getElementById('home-btn').style.display='none';
+    document.querySelector('.header').style.display='none';
+    el.innerHTML = `
+      <div class="splash">
+        <div class="splash-logo">
+          <svg width="494" height="231" viewBox="190 20 300 280" xmlns="http://www.w3.org/2000/svg">
+            ${getSvgInner()}
+          </svg>
+        </div>
+        <h2>Ερωτήσεις Πιστοποίησης ΕΟΠΠΕΠ</h2>
+        <p>Προσωπικό Ιδιωτικής Ασφάλειας<br>
+        Κατάλογος Εξετάσεων Πιστοποίησης Επαγγελματικής Κατάρτισης Προσωπικού Ιδιωτικής Ασφάλειας<br><br>
+        Κάθε ερώτηση του θεωρητικού μέρους, έχει 4 ή 5 επιλογές και μόνο 1 σωστή απάντηση.</p>
+        <div class="info-grid" style="grid-template-columns:repeat(2,1fr);max-width:420px;margin:0 auto 2rem;">
+          <div class="info-box" style="text-align:center;cursor:pointer;transition:border-color 0.15s,transform 0.1s;" onclick="startQuiz()" onmouseover="this.style.borderColor='var(--gold)';this.style.transform='scale(1.03)';" onmouseout="this.style.borderColor='';this.style.transform='';">
+            <div class="info-num">181</div>
+            <div class="info-lbl" style="white-space:normal;line-height:1.4;">Ερωτήσεις<br>Θεωρητικού Μέρους</div>
+          </div>
+          <div class="info-box" style="text-align:center;cursor:pointer;transition:border-color 0.15s,transform 0.1s;" onclick="startPractical()" onmouseover="this.style.borderColor='var(--gold)';this.style.transform='scale(1.03)';" onmouseout="this.style.borderColor='';this.style.transform='';">
+            <div class="info-num">21</div>
+            <div class="info-lbl" style="white-space:normal;line-height:1.4;">Ερωτήσεις<br>Πρακτικού Μέρους</div>
+          </div>
+        </div>
+        </div>
+        <div style="margin-bottom:1.5rem;text-align:center;">
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:0.6rem;">Ή μεταβείτε απευθείας σε ερώτηση</div>
+          <div style="display:flex;gap:0.5rem;justify-content:center;max-width:280px;margin:0 auto;">
+            <input id="splash-jump-input" type="text" placeholder="π.χ. Α45 ή Β11" style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:0.5rem 0.75rem;color:var(--text);font-family:inherit;font-size:0.85rem;" onkeydown="if(event.key==='Enter')splashJump()"/>
+            <button onclick="splashJump()" style="background:var(--gold);color:#0b0d14;border:none;border-radius:8px;padding:0.5rem 1rem;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Μετάβαση →</button>
+          </div>
+          <div id="splash-jump-msg" style="font-size:0.72rem;color:var(--red);margin-top:0.4rem;min-height:1em;"></div>
+        </div>
+        <button class="start-btn" onclick="startQuiz()" style="display:block;margin:0 auto;">Έναρξη από την Αρχή →</button>
+      </div>`;
+    return;
+  }
+
+  if(phase==='results'){
+    document.querySelector('.header').style.display='flex';
+    hdr.style.display='none'; pw.style.display='none'; sb.style.display='none';
+    document.getElementById('home-btn').style.display='none';
+    const pct = Math.round((score/questions.length)*100);
+    const msg = pct>=80?'Άριστο αποτέλεσμα! Έχεις εξαιρετική γνώση της ύλης.':pct>=60?'Καλή επίδοση! Λίγη ακόμα επανάληψη και είσαι έτοιμος.':'Χρειάζεται εντατική επανάληψη. Μην τα παρατάς!';
+    const icon = pct>=80?'🏆':pct>=60?'✅':'📚';
+    // ── Αποθήκευση αποτελεσμάτων ──
+    saveResults();
+    el.innerHTML = `
+      <div class="results">
+        <div class="results-icon">${icon}</div>
+        <div class="results-title">Αποτελέσματα Κουίζ</div>
+        <div class="results-score">${score}<span style="font-size:1.5rem;color:var(--text3)">/${questions.length}</span></div>
+        <div class="results-pct">${pct}% Ποσοστό Επιτυχίας</div>
+        <div class="results-msg">${msg}</div>
+        <div class="results-grid">
+          <div class="results-stat"><div class="n" style="color:var(--green)">${score}</div><div class="l">Σωστές</div></div>
+          <div class="results-stat"><div class="n" style="color:var(--red)">${wrong}</div><div class="l">Λάθος</div></div>
+        </div>
+        <button class="restart-btn" onclick="restart()">🔄 Επανάληψη</button>
+      </div>`;
+    return;
+  }
+
+  // Quiz phase
+  document.querySelector('.header').style.display='flex';
+  hdr.style.display='flex'; pw.style.display='flex'; sb.style.display='block';
+  document.getElementById('home-btn').style.display='flex';
+  document.getElementById('q-grid-card').style.display='block';
+  document.getElementById('p-grid-card').style.display='none';
+  document.querySelectorAll('#sidebar .sidebar-card').forEach(c=>c.style.display='block');
+  document.getElementById('jump-input').placeholder='π.χ. Α45';
+  setTimeout(renderGrid, 0);
+  document.getElementById('score-val').textContent = score+'/'+current;
+  document.getElementById('prog-fill').style.width = ((current/questions.length)*100)+'%';
+  document.getElementById('prog-text').textContent = (current+1)+' / '+questions.length;
+  updateSidebar();
+
+  const q = questions[current];
+  const letters = ['Α','Β','Γ','Δ','Ε','ΣΤ'];
+  const isAnswered = answers[current] !== null;
+  const isReadOnly = isAnswered; // navigated to answered question for reading
+
+  const optHtml = q.options.map((opt,i)=>{
+    let cls='opt';
+    if(revealed){
+      if(i===q.correct) cls+=' correct';
+      else if(i===selected) cls+=' wrong';
+      else cls+=' neutral';
+    } else if(i===pendingAnswer){
+      cls+=' pending'; // highlight selected-but-unconfirmed
+    }
+    const disabled = revealed || isReadOnly ? 'disabled' : '';
+    return `<button class="${cls}" onclick="selectOpt(${i})" ${disabled}><span class="opt-letter">${letters[i]}</span><span class="opt-text">${opt}</span></button>`;
+  }).join('');
+
+  // Action buttons row (Confirm + Skip) — shown only when question is active & unanswered
+  const actionRow = (!revealed && !isReadOnly) ? `
+    <div style="display:flex;gap:0.625rem;margin-top:1rem;">
+      <button onclick="confirmAnswer()" ${pendingAnswer===null?'disabled':''} style="flex:1;padding:0.8rem;border:none;border-radius:10px;font-size:0.92rem;font-weight:700;cursor:${pendingAnswer!==null?'pointer':'not-allowed'};font-family:inherit;transition:all 0.15s;background:${pendingAnswer!==null?'var(--gold)':'var(--border2)'};color:${pendingAnswer!==null?'#0b0d14':'var(--text3)'};" onmouseover="if(${pendingAnswer!==null})this.style.background='var(--gold2)'" onmouseout="if(${pendingAnswer!==null})this.style.background='var(--gold)'">
+        ✓ Επιβεβαίωση Απάντησης
+      </button>
+      <button onclick="skipQuestion()" style="padding:0.8rem 1.1rem;background:transparent;border:1.5px solid var(--border2);border-radius:10px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text3);white-space:nowrap;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#7c3aed';this.style.color='#9f67ff'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">
+        ↷ Παράβλεψη
+      </button>
+    </div>
+  ` : '';
+
+  const readOnlyBanner = isReadOnly ? `
+    <div style="background:rgba(239,159,39,0.08);border:1px solid rgba(239,159,39,0.2);border-radius:8px;padding:0.5rem 0.875rem;margin-top:1rem;font-size:0.78rem;color:var(--gold);font-weight:600;">
+      👁 Λειτουργία ανάγνωσης — η απάντηση έχει ήδη καταχωρηθεί
+    </div>
+  ` : '';
+
+  const summaryHtml = revealed ? `
+    <div class="feedback ${selected===q.correct?'ok':'no'}">
+      ${selected===q.correct?'✓ Σωστή απάντηση!':'✗ Λανθασμένη — Σωστή: '+letters[q.correct]}
+    </div>
+    ${!isReadOnly ? `<button class="next-btn" onclick="nextQ()">${current<questions.length-1?'Επόμενη Ερώτηση →':'Δείτε Αποτελέσματα →'}</button>` : `<button class="next-btn" onclick="nextQ()">Συνέχεια →</button>`}
+  ` : '';
+
+  el.innerHTML = `
+    <div class="q-card">
+      <div class="q-num">Ερώτηση ${q.id} &nbsp;·&nbsp; ${current+1} από ${questions.length}${skipped.has(current)?' <span style="color:#9f67ff;font-size:0.65rem;">● Παραβλέφθηκε</span>':''}</div>
+      <div class="q-text">${q.question}</div>
+      <div class="options">${optHtml}</div>
+      ${actionRow}
+      ${readOnlyBanner}
+      ${summaryHtml}
+    </div>`;
+}
+
+// ── SVG inner elements (logo for splash) ────────────────────────────────────
+function getSvgInner(){
+  return `<rect x="190" y="20" width="300" height="280" rx="10" fill="#0b0d14"/>
+  <ellipse cx="340" cy="148" rx="140" ry="130" fill="url(#glow2)"/>
+  <defs><radialGradient id="glow2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#3730a3" stop-opacity="0.45"/><stop offset="100%" stop-color="#080c18" stop-opacity="0"/></radialGradient></defs>
+  <g transform="translate(340,130)">
+    <polygon points="0,-72 62,-36 62,36 0,72 -62,36 -62,-36" fill="#0d1230" stroke="#EF9F27" stroke-width="1.5"/>
+    <circle cx="0" cy="-30" r="5" fill="#EF9F27"/><circle cx="-26" cy="6" r="5" fill="#EF9F27"/>
+    <circle cx="26" cy="6" r="5" fill="#EF9F27"/><circle cx="0" cy="28" r="5" fill="#FAC775"/>
+    <line x1="0" y1="-25" x2="-22" y2="4" stroke="#EF9F27" stroke-width="1" opacity="0.7"/>
+    <line x1="0" y1="-25" x2="22" y2="4" stroke="#EF9F27" stroke-width="1" opacity="0.7"/>
+    <line x1="-22" y1="4" x2="22" y2="4" stroke="#EF9F27" stroke-width="1" opacity="0.7"/>
+    <line x1="-22" y1="4" x2="0" y2="25" stroke="#FAC775" stroke-width="1" opacity="0.7"/>
+    <line x1="22" y1="4" x2="0" y2="25" stroke="#FAC775" stroke-width="1" opacity="0.7"/>
+    <circle cx="0" cy="-30" r="2.5" fill="#FAEEDA"/><circle cx="-26" cy="6" r="2.5" fill="#FAEEDA"/>
+    <circle cx="26" cy="6" r="2.5" fill="#FAEEDA"/><circle cx="0" cy="28" r="2.5" fill="#FAEEDA"/>
+  </g>
+  <text x="340" y="232" text-anchor="middle" font-size="22" letter-spacing="5">
+    <tspan font-family="Cinzel,Georgia,serif" font-weight="700" fill="#FFFFFF">XIV </tspan>
+    <tspan font-family="Inter,sans-serif" font-weight="700" fill="#EF9F27">GUARD</tspan>
+  </text>
+  <text x="340" y="256" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" font-weight="400" letter-spacing="6" fill="#8890B5">ACADEMY</text>`;
+}
+
+// ── Actions ──────────────────────────────────────────────────────────────────
+function startQuiz(){ phase='quiz'; pendingAnswer=null; render(); setTimeout(renderGrid,0); }
+
+function startPractical(startIdx){
+  startIdx = startIdx || 0;
+  phase='practical';
+  practicalQueue = practicalQuestions.map((_,i)=>i);
+  practicalQueuePos = startIdx;
+  practicalRevealed = false;
+  practicalIsRepeat = false;
+  practicalAssessments = new Array(practicalQuestions.length).fill(null);
+  practicalDone = false;
+  render(); setTimeout(renderPracticalGrid,0);
+}
+
+function practicalReveal(){ practicalRevealed=true; render(); }
+
+function practicalAssess(knew){
+  const qi = practicalQueue[practicalQueuePos];
+  practicalAssessments[qi] = knew;
+  const allNowDone = practicalQueue.every(i => practicalAssessments[i] !== null);
+  if(allNowDone){
+    practicalDone = true;
+  } else if(practicalQueuePos < practicalQueue.length - 1){
+    practicalQueuePos++; practicalRevealed=false;
+  }
+  render();
+}
+
+function renderPracticalGrid(){
+  const grid = document.getElementById('p-grid');
+  if(!grid) return;
+  grid.innerHTML = practicalQuestions.map((_,i) => {
+    const isCurrent = practicalQueue[practicalQueuePos] === i;
+    const inQueue   = practicalQueue.indexOf(i) !== -1;
+    const ass       = practicalAssessments[i];
+    let cls = 'q-dot';
+    if(isCurrent)      cls += ' current';
+    else if(ass===true) cls += ' correct';
+    else if(ass===false) cls += ' wrong';
+    else if(ass==='skip') cls += ' skipped';
+    const dim = !inQueue ? 'opacity:0.3;cursor:default;' : '';
+    const click = (inQueue && !isCurrent) ? `onclick="jumpToPractical(${i})"` : '';
+    return `<div class="${cls}" title="${practicalQuestions[i].id}" style="${dim}" ${click}></div>`;
+  }).join('');
+}
+
+function jumpToPractical(idx){
+  // Find idx in practicalQueue (if not in queue, ignore)
+  const qpos = practicalQueue.indexOf(idx);
+  if(qpos === -1) return;
+  practicalQueuePos = qpos;
+  practicalRevealed = false;
+  render(); setTimeout(renderPracticalGrid,0);
+}
+
+function practicalNavQ(dir){
+  const np = practicalQueuePos + dir;
+  if(np >= 0 && np < practicalQueue.length){
+    practicalQueuePos=np; practicalRevealed=false; render();
+  }
+}
+
+function startPracticalRepeat(){
+  const unknowns = practicalAssessments.map((v,i)=>({v,i})).filter(x=>x.v===false||x.v==='skip').map(x=>x.i);
+  if(!unknowns.length) return;
+  phase='practical';
+  practicalQueue=unknowns; practicalQueuePos=0;
+  practicalRevealed=false; practicalIsRepeat=true;
+  unknowns.forEach(i=>{ practicalAssessments[i]=null; });
+  practicalDone = false;
+  render();
+}
+
+function selectOpt(i){
+  if(revealed) return;
+  if(answers[current] !== null) return; // read-only
+  pendingAnswer = i;
+  render();
+}
+
+function confirmAnswer(){
+  if(pendingAnswer === null) return;
+  selected = pendingAnswer;
+  revealed = true;
+  const correct = selected === questions[current].correct;
+  if(correct) score++; else wrong++;
+  answers[current] = correct;
+  answeredSelections[current] = selected;
+  skipped.delete(current);
+  pendingAnswer = null;
+  render();
+  renderGrid();
+}
+
+function skipQuestion(){
+  skipped.add(current);
+  pendingAnswer = null;
+  const next = findNext(current + 1);
+  if(next !== -1){
+    current = next; selected = null; revealed = false;
+    render(); renderGrid();
+  } else {
+    const sk = findNextSkipped();
+    if(sk !== -1){ current=sk; skipped.delete(sk); selected=null; revealed=false; render(); renderGrid(); }
+    else { phase='results'; render(); }
+  }
+}
+
+function findNext(from){
+  for(let i=from; i<questions.length; i++){
+    if(answers[i]===null && !skipped.has(i)) return i;
+  }
+  return -1;
+}
+
+function findNextSkipped(){
+  for(let i=0; i<questions.length; i++){
+    if(answers[i]===null && skipped.has(i)) return i;
+  }
+  return -1;
+}
+
+function nextQ(){
+  if(answers[current]!==null && revealed){
+    // returning from read-only: go to next question after the viewed one
+    const next = findNext(current+1);
+    if(next !== -1){ current=next; selected=null; revealed=false; pendingAnswer=null; render(); renderGrid(); }
+    else {
+      // nothing after, try from beginning
+      const fromStart = findNext(0);
+      if(fromStart !== -1){ current=fromStart; selected=null; revealed=false; pendingAnswer=null; render(); renderGrid(); }
+      else { phase='results'; render(); }
+    }
+    return;
+  }
+  const next = findNext(current+1);
+  if(next !== -1){
+    current=next; selected=null; revealed=false; pendingAnswer=null; render(); renderGrid();
+  } else {
+    // check if any skipped remain
+    const sk = findNextSkipped();
+    if(sk !== -1){ current=sk; skipped.delete(sk); selected=null; revealed=false; pendingAnswer=null; render(); renderGrid(); }
+    else { phase='results'; render(); }
+  }
+}
+
+function restart(){
+  current=0; score=0; wrong=0; selected=null; revealed=false; phase='splash';
+  answers.fill(null); answeredSelections.fill(null); skipped.clear(); pendingAnswer=null;
+  resultsSaved = false;
+  render();
+}
+
+function renderGrid(){
+  const grid = document.getElementById('q-grid');
+  if(!grid) return;
+  grid.innerHTML = questions.map((q,i) => {
+    let cls = 'q-dot';
+    if(i === current && phase==='quiz') cls += ' current';
+    else if(answers[i] === true) cls += ' correct';
+    else if(answers[i] === false) cls += ' wrong';
+    else if(skipped.has(i)) cls += ' skipped';
+    return `<div class="${cls}" title="${q.id}" onclick="jumpToIdx(${i})"></div>`;
+  }).join('');
+}
+
+function jumpToIdx(idx){
+  if(idx === current) return;
+  current=idx; phase='quiz';
+  if(answers[idx] !== null){
+    // Answered: show read-only with revealed state
+    selected = questions[idx].options.indexOf(
+      questions[idx].options.find((_,i) => {
+        // find what was selected — we store it in answeredSelections
+        return false;
+      })
+    );
+    // Use stored selection
+    selected = answeredSelections[idx];
+    revealed = true;
+  } else {
+    selected=null; revealed=false;
+    pendingAnswer=null; confirmed=false;
+  }
+  render(); renderGrid();
+  document.getElementById('jump-msg') && (document.getElementById('jump-msg').textContent='');
+}
+
+function goHome(){
+  if(confirm('Επιστροφή στην αρχική; Η πρόοδός σου θα χαθεί.'))
+    restart();
+}
+
+function splashJump(){
+  const val = document.getElementById('splash-jump-input').value.trim().toUpperCase();
+  const msg = document.getElementById('splash-jump-msg');
+  if(!val){ msg.textContent=''; return; }
+
+  // Check practical questions (Β1-Β21)
+  const pidx = practicalQuestions.findIndex(q => q.id.toUpperCase() === val);
+  if(pidx !== -1){
+    msg.textContent='';
+    practicalQueue=practicalQuestions.map((_,i)=>i); practicalQueuePos=pidx; practicalRevealed=false; practicalIsRepeat=false; practicalAssessments=new Array(practicalQuestions.length).fill(null); phase='practical'; render();
+    return;
+  }
+
+  // Check theoretical questions (Α1-Α181)
+  const idx = questions.findIndex(q => q.id.toUpperCase() === val);
+  if(idx !== -1){
+    msg.textContent='';
+    current=idx; selected=null; revealed=false; phase='quiz'; render();
+    return;
+  }
+
+  msg.textContent='✗ Δεν βρέθηκε: ' + val + ' (π.χ. Α45 ή Β11)';
+}
+
+render();
+
+// ── Save quiz results to Firestore ─────────────────────────────────────────
+let resultsSaved = false;
+async function saveResults(){
+  if(resultsSaved) return;
+  if(!window._fbUser || !window._db) return;
+  resultsSaved = true;
+  try {
+    await window._fbAddDoc(
+      window._fbCollection(window._db, 'quizResults'),
+      {
+        uid:         window._fbUser.uid,
+        email:       window._fbUser.email,
+        score:       score,
+        wrong:       wrong,
+        total:       questions.length,
+        percentage:  Math.round((score / questions.length) * 100),
+        completedAt: window._fbTimestamp(),
+        type:        'theoretical'
+      }
+    );
+  } catch(e){ console.error('Save error:', e); }
+}
+
+
+// ── Cinematic Intro — scan-reveal sync ───────────────────────────────────────
+(function(){
+  const SCAN_DURATION = 7400; // ms — ends exactly when intro fades out
+  const SCAN_START    = 600;  // ms delay before scan begins
+  const TOTAL         = 10000; // total intro duration ms
+
+  const screen   = document.getElementById('intro-screen');
+  const logo     = document.getElementById('intro-logo');
+  const divider  = document.getElementById('intro-divider');
+  const tagline  = document.getElementById('intro-tagline');
+  const academy  = document.getElementById('intro-academy');
+  const byline   = document.getElementById('intro-byline');
+  const scanEl   = document.querySelector('.intro-scanline');
+
+  // ── Measure element vertical centers relative to screen height ──
+  function revealAt(el, callback){
+    // Get element's vertical center position as fraction of screen height
+    const rect = el.getBoundingClientRect();
+    const center = rect.top + rect.height / 2;
+    const frac = Math.max(0, Math.min(1, center / window.innerHeight));
+    // Convert fraction to ms into scan duration
+    const delay = SCAN_START + frac * SCAN_DURATION;
+    setTimeout(callback, delay);
+  }
+
+  // ── Replace CSS scan animation with JS-controlled position ──
+  // Remove CSS animation from scanline, use JS rAF instead
+  scanEl.style.animation = 'none';
+  scanEl.style.top = '-2px';
+  scanEl.style.opacity = '0';
+
+  let startTime = null;
+  let scheduled = false;
+
+  function scanFrame(ts){
+    if(!startTime) startTime = ts;
+    const elapsed = ts - startTime;
+    const progress = Math.min(elapsed / SCAN_DURATION, 1);
+    const px = progress * window.innerHeight;
+    scanEl.style.top = px + 'px';
+    scanEl.style.opacity = progress < 0.02 || progress > 0.98 ? '0' : '1';
+
+    // Check elements — reveal when scan passes through their center
+    checkReveal(logo,    px, 'logo');
+    checkReveal(divider, px, 'divider');
+    checkReveal(tagline, px, 'tagline');
+    checkReveal(academy, px, 'academy');
+    checkReveal(byline,  px, 'byline');
+
+    if(progress < 1) requestAnimationFrame(scanFrame);
+    else scanEl.style.opacity = '0';
+  }
+
+  const revealed = {};
+  function checkReveal(el, scanY, key){
+    if(revealed[key]) return;
+    const rect = el.getBoundingClientRect();
+    const center = rect.top + rect.height / 2;
+    if(scanY >= center - 4){
+      revealed[key] = true;
+      el.classList.add('show');
+    }
+  }
+
+  // ── Start scan after delay ──
+  setTimeout(()=>{
+    requestAnimationFrame(scanFrame);
+  }, SCAN_START);
+
+  // ── Auto-advance after TOTAL ms ──
+  setTimeout(()=>{
+    phase = 'splash';
+    render();
+    screen.style.transition = 'opacity 1s ease';
+    screen.style.opacity = '0';
+    setTimeout(()=>{ screen.style.display = 'none'; }, 1000);
+  }, TOTAL);
+})();
+
+</script>
+
+</div><!-- /app-root -->
+</body>
+</html>

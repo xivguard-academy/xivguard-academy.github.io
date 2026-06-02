@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XIV Guard Academy — Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+
+<!-- ═══════════════════════════════════════════════
+     FIREBASE CONFIG — αντικατάστησε με τα δικά σου
+     ═══════════════════════════════════════════════ -->
+<script type="module">
+  import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut }
+                             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, getDoc }
+                             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyDW2mGxX3qR92-RceG8k5OV3_HsNUuAvnk",
+    authDomain:        "xiv-guard.firebaseapp.com",
+    projectId:         "xiv-guard",
+    storageBucket:     "xiv-guard.firebasestorage.app",
+    messagingSenderId: "924156526350",
+    appId:             "1:924156526350:web:8cf9188e4d7e8b9121e15f"
+  };
+
+  const ADMIN_EMAIL = "sbabaitis@gmail.com";
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // ── Auth check ─────────────────────────────────────────────────────────────
+  onAuthStateChanged(auth, async (user) => {
+    if(!user){ window.location.href = 'index.html'; return; }
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if(!snap.exists() || snap.data().email !== ADMIN_EMAIL){
+      window.location.href = 'index.html'; return;
+    }
+    document.getElementById('admin-email').textContent = user.email;
+    document.getElementById('loading-gate').style.display = 'none';
+    document.getElementById('app').style.display          = 'block';
+    loadAll();
+  });
+
+  // ── Logout ────────────────────────────────────────────────────────────────
+  window.doLogout = async () => { await signOut(auth); window.location.href = 'index.html'; };
+
+  // ── Load all data ─────────────────────────────────────────────────────────
+  async function loadAll(){
+    await Promise.all([ loadUsers(), loadResults() ]);
+  }
+
+  // ── Load users ────────────────────────────────────────────────────────────
+  async function loadUsers(){
+    const snap = await getDocs(collection(db, 'users'));
+    const users = [];
+    snap.forEach(d => users.push({ id: d.id, ...d.data() }));
+
+    const pending  = users.filter(u => u.status === 'pending');
+    const approved = users.filter(u => u.status === 'approved' && !u.isAdmin);
+    const disabled = users.filter(u => u.status === 'disabled');
+
+    // Badge counts
+    document.getElementById('badge-pending').textContent  = pending.length  || '';
+    document.getElementById('badge-active').textContent   = approved.length || '';
+    document.getElementById('badge-disabled').textContent = disabled.length || '';
+
+    // Pending table
+    const pt = document.getElementById('pending-tbody');
+    if(pending.length === 0){
+      pt.innerHTML = '<tr><td colspan="3" class="empty-msg">Δεν υπάρχουν αιτήματα σε αναμονή</td></tr>';
+    } else {
+      pt.innerHTML = pending.map(u => `
+        <tr>
+          <td>${u.email}</td>
+          <td>${formatDate(u.createdAt)}</td>
+          <td class="actions">
+            <button class="btn-approve" onclick="approveUser('${u.id}')">✓ Έγκριση</button>
+            <button class="btn-reject"  onclick="rejectUser('${u.id}', '${u.email}')">✗ Απόρριψη</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    // Active table
+    const at = document.getElementById('active-tbody');
+    if(approved.length === 0){
+      at.innerHTML = '<tr><td colspan="3" class="empty-msg">Δεν υπάρχουν ενεργοί χρήστες</td></tr>';
+    } else {
+      at.innerHTML = approved.map(u => `
+        <tr>
+          <td>${u.email}</td>
+          <td>${formatDate(u.createdAt)}</td>
+          <td class="actions">
+            <button class="btn-disable" onclick="disableUser('${u.id}', '${u.email}')">🚫 Απενεργοποίηση</button>
+            <button class="btn-delete"  onclick="deleteUser('${u.id}', '${u.email}')">🗑 Διαγραφή</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    // Disabled table
+    const dt = document.getElementById('disabled-tbody');
+    if(disabled.length === 0){
+      dt.innerHTML = '<tr><td colspan="3" class="empty-msg">Δεν υπάρχουν απενεργοποιημένοι χρήστες</td></tr>';
+    } else {
+      dt.innerHTML = disabled.map(u => `
+        <tr>
+          <td>${u.email}</td>
+          <td>${formatDate(u.createdAt)}</td>
+          <td class="actions">
+            <button class="btn-approve" onclick="approveUser('${u.id}')">↩ Επαναφορά</button>
+            <button class="btn-delete"  onclick="deleteUser('${u.id}', '${u.email}')">🗑 Διαγραφή</button>
+          </td>
+        </tr>`).join('');
+    }
+  }
+
+  // ── Load results ──────────────────────────────────────────────────────────
+  async function loadResults(){
+    const q    = query(collection(db, 'quizResults'), orderBy('completedAt', 'desc'));
+    const snap = await getDocs(q);
+    const results = [];
+    snap.forEach(d => results.push({ id: d.id, ...d.data() }));
+
+    document.getElementById('badge-results').textContent = results.length || '';
+
+    const tbody = document.getElementById('results-tbody');
+    if(results.length === 0){
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
+      return;
+    }
+    tbody.innerHTML = results.map(r => {
+      const pct = r.percentage ?? Math.round((r.score/r.total)*100);
+      const color = pct>=80?'var(--green)':pct>=60?'var(--gold)':'var(--red)';
+      return `<tr>
+        <td>${r.email}</td>
+        <td style="color:${color};font-weight:700;">${pct}%</td>
+        <td style="color:var(--green);">${r.score}</td>
+        <td style="color:var(--red);">${r.wrong ?? (r.total - r.score)}</td>
+        <td>${formatDate(r.completedAt)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+  window.approveUser = async (uid) => {
+    await updateDoc(doc(db, 'users', uid), { status: 'approved' });
+    toast('✅ Έγκριση επιτυχής!');
+    loadUsers();
+  };
+
+  window.rejectUser = async (uid, email) => {
+    if(!confirm(`Απόρριψη & διαγραφή λογαριασμού: ${email};\nΔεν μπορεί να αναιρεθεί.`)) return;
+    await deleteDoc(doc(db, 'users', uid));
+    toast('🗑 Χρήστης διαγράφηκε.');
+    loadUsers();
+  };
+
+  window.disableUser = async (uid, email) => {
+    if(!confirm(`Απενεργοποίηση: ${email};`)) return;
+    await updateDoc(doc(db, 'users', uid), { status: 'disabled' });
+    toast('🚫 Χρήστης απενεργοποιήθηκε.');
+    loadUsers();
+  };
+
+  window.deleteUser = async (uid, email) => {
+    if(!confirm(`Οριστική διαγραφή: ${email};\nΔεν μπορεί να αναιρεθεί.`)) return;
+    await deleteDoc(doc(db, 'users', uid));
+    toast('🗑 Χρήστης διαγράφηκε.');
+    loadUsers();
+  };
+
+  window.refreshAll = () => { loadAll(); toast('🔄 Ανανέωση...'); };
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function formatDate(ts){
+    if(!ts) return '—';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric'})
+         + ' ' + d.toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 3000);
+  }
+
+  // ── Tab switching ─────────────────────────────────────────────────────────
+  window.switchTab = (tab) => {
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='none');
+    document.getElementById('tab-'+tab).classList.add('active');
+    document.getElementById('panel-'+tab).style.display='block';
+  };
+</script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0b0d14;--surface:#13151f;--surface2:#1a1d2a;
+  --border:#252838;--border2:#2e3248;
+  --gold:#EF9F27;--gold2:#f5c842;--gold-dim:rgba(239,159,39,0.12);
+  --text:#e8eaf2;--text2:#9aa0bc;--text3:#636880;
+  --green:#3fb950;--red:#f85149;
+  --radius:12px;--radius-sm:8px;
+}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* Loading */
+#loading-gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;}
+.spinner{width:38px;height:38px;border-radius:50%;border:3px solid rgba(239,159,39,0.15);border-top-color:var(--gold);animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#app{display:none;}
+
+/* Header */
+.header{background:var(--surface);border-bottom:1px solid var(--gold);padding:0.875rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;box-shadow:0 4px 24px rgba(239,159,39,0.08);position:sticky;top:0;z-index:100;}
+.header-left{display:flex;align-items:center;gap:1rem;}
+.header-title{font-family:'Lora',Georgia,serif;font-size:0.95rem;font-weight:700;color:var(--gold);}
+.header-sub{font-size:0.7rem;color:var(--text3);margin-top:2px;}
+.header-right{display:flex;align-items:center;gap:0.75rem;}
+.admin-badge{background:rgba(239,159,39,0.12);border:1px solid rgba(239,159,39,0.3);border-radius:20px;padding:0.25rem 0.75rem;font-size:0.72rem;font-weight:700;color:var(--gold);}
+.user-info{font-size:0.72rem;color:var(--text3);}
+.btn-logout{background:rgba(248,81,73,0.1);border:1px solid rgba(248,81,73,0.3);border-radius:8px;padding:0.35rem 0.75rem;color:#f85149;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s;}
+.btn-logout:hover{background:rgba(248,81,73,0.2);}
+.btn-refresh{background:var(--gold-dim);border:1px solid rgba(239,159,39,0.3);border-radius:8px;padding:0.35rem 0.75rem;color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s;}
+.btn-refresh:hover{background:rgba(239,159,39,0.2);}
+
+/* Main */
+.main{max-width:1100px;margin:0 auto;padding:2rem 1.5rem 4rem;}
+
+/* Tabs */
+.tabs{display:flex;gap:0.375rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:0;}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;padding:0.625rem 1.25rem;font-family:inherit;font-size:0.85rem;font-weight:600;color:var(--text3);cursor:pointer;transition:color 0.15s;display:flex;align-items:center;gap:0.5rem;margin-bottom:-1px;}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-btn:hover:not(.active){color:var(--text2);}
+.badge{background:rgba(239,159,39,0.2);color:var(--gold);border-radius:12px;padding:0.1rem 0.5rem;font-size:0.68rem;font-weight:800;min-width:18px;text-align:center;}
+.badge.red{background:rgba(248,81,73,0.15);color:var(--red);}
+
+/* Table */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+table{width:100%;border-collapse:collapse;}
+thead th{background:var(--surface2);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);padding:0.75rem 1rem;text-align:left;}
+tbody tr{border-top:1px solid var(--border);}
+tbody tr:hover{background:rgba(255,255,255,0.02);}
+tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
+.empty-msg{text-align:center;color:var(--text3);font-size:0.82rem;padding:2rem !important;}
+
+/* Action buttons */
+.actions{display:flex;gap:0.5rem;flex-wrap:wrap;}
+.btn-approve{background:rgba(63,185,80,0.1);border:1px solid rgba(63,185,80,0.3);border-radius:6px;padding:0.3rem 0.7rem;color:var(--green);font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s;white-space:nowrap;}
+.btn-approve:hover{background:rgba(63,185,80,0.2);}
+.btn-reject{background:rgba(248,81,73,0.1);border:1px solid rgba(248,81,73,0.3);border-radius:6px;padding:0.3rem 0.7rem;color:var(--red);font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s;white-space:nowrap;}
+.btn-reject:hover{background:rgba(248,81,73,0.2);}
+.btn-disable{background:rgba(239,159,39,0.1);border:1px solid rgba(239,159,39,0.3);border-radius:6px;padding:0.3rem 0.7rem;color:var(--gold);font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s;white-space:nowrap;}
+.btn-disable:hover{background:rgba(239,159,39,0.2);}
+.btn-delete{background:rgba(248,81,73,0.08);border:1px solid rgba(248,81,73,0.2);border-radius:6px;padding:0.3rem 0.7rem;color:#f85149;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s;white-space:nowrap;opacity:0.7;}
+.btn-delete:hover{background:rgba(248,81,73,0.2);opacity:1;}
+
+/* Section header */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.875rem;}
+.section-title{font-size:0.95rem;font-weight:700;color:var(--text);}
+.section-sub{font-size:0.72rem;color:var(--text3);margin-top:2px;}
+
+/* Toast */
+#toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:0.75rem 1.25rem;font-size:0.85rem;font-weight:600;color:var(--text);opacity:0;transform:translateY(10px);transition:opacity 0.3s,transform 0.3s;z-index:9999;pointer-events:none;}
+#toast.show{opacity:1;transform:translateY(0);}
+
+@media(max-width:700px){
+  .main{padding:1.25rem 0.875rem 3rem;}
+  .tabs{overflow-x:auto;}
+  .header-right .user-info,.header-right .admin-badge{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div id="loading-gate"><div class="spinner"></div></div>
+
+<div id="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div>
+        <div class="header-title">XIV Guard Academy</div>
+        <div class="header-sub">Admin Panel — Διαχείριση Χρηστών & Αποτελεσμάτων</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="admin-badge">⚙ ADMIN</span>
+      <span class="user-info" id="admin-email"></span>
+      <button class="btn-refresh" onclick="refreshAll()">🔄 Ανανέωση</button>
+      <a href="quiz.html" style="background:var(--gold-dim);border:1px solid rgba(239,159,39,0.3);border-radius:8px;padding:0.35rem 0.75rem;color:var(--gold);font-size:0.78rem;font-weight:700;text-decoration:none;">📚 Quiz</a>
+      <button class="btn-logout" onclick="doLogout()">Έξοδος</button>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-pending" onclick="switchTab('pending')">
+        Αναμονή <span class="badge red" id="badge-pending"></span>
+      </button>
+      <button class="tab-btn" id="tab-active" onclick="switchTab('active')">
+        Ενεργοί <span class="badge" id="badge-active"></span>
+      </button>
+      <button class="tab-btn" id="tab-disabled" onclick="switchTab('disabled')">
+        Απενεργοποιημένοι <span class="badge" id="badge-disabled"></span>
+      </button>
+      <button class="tab-btn" id="tab-results" onclick="switchTab('results')">
+        Αποτελέσματα Quiz <span class="badge" id="badge-results"></span>
+      </button>
+    </div>
+
+    <!-- Panel: Pending -->
+    <div id="panel-pending" class="tab-panel">
+      <div class="section-hdr">
+        <div>
+          <div class="section-title">Αιτήματα σε Αναμονή</div>
+          <div class="section-sub">Χρήστες που εγγράφηκαν και περιμένουν έγκριση πρόσβασης</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Email</th><th>Ημ/νία Εγγραφής</th><th>Ενέργειες</th></tr></thead>
+          <tbody id="pending-tbody"><tr><td colspan="3" class="empty-msg">Φόρτωση...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Panel: Active -->
+    <div id="panel-active" class="tab-panel" style="display:none;">
+      <div class="section-hdr">
+        <div>
+          <div class="section-title">Ενεργοί Χρήστες</div>
+          <div class="section-sub">Χρήστες με εγκεκριμένη πρόσβαση στο quiz</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Email</th><th>Ημ/νία Εγγραφής</th><th>Ενέργειες</th></tr></thead>
+          <tbody id="active-tbody"><tr><td colspan="3" class="empty-msg">Φόρτωση...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Panel: Disabled -->
+    <div id="panel-disabled" class="tab-panel" style="display:none;">
+      <div class="section-hdr">
+        <div>
+          <div class="section-title">Απενεργοποιημένοι Χρήστες</div>
+          <div class="section-sub">Χρήστες χωρίς πρόσβαση — μπορείς να τους επαναφέρεις</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Email</th><th>Ημ/νία Εγγραφής</th><th>Ενέργειες</th></tr></thead>
+          <tbody id="disabled-tbody"><tr><td colspan="3" class="empty-msg">Φόρτωση...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Panel: Results -->
+    <div id="panel-results" class="tab-panel" style="display:none;">
+      <div class="section-hdr">
+        <div>
+          <div class="section-title">Αποτελέσματα Quiz</div>
+          <div class="section-sub">Όλες οι ολοκληρωμένες απόπειρες — πιο πρόσφατες πρώτα</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Email</th><th>Ποσοστό</th><th>Σωστές</th><th>Λάθος</th><th>Ημερομηνία</th></tr></thead>
+          <tbody id="results-tbody"><tr><td colspan="5" class="empty-msg">Φόρτωση...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+</body>
+</html>
