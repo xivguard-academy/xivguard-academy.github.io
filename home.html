@@ -69,9 +69,22 @@
       const results = [];
       snap.forEach(d => results.push(d.data()));
 
-      if(results.length === 0){ document.getElementById('no-results').style.display='block'; return; }
-
       // ── Stats ──────────────────────────────────────────────────────────────
+      if(results.length === 0){
+        document.getElementById('stat-best').textContent  = '—';
+        document.getElementById('stat-avg').textContent   = '—';
+        document.getElementById('stat-count').textContent = '0';
+        document.getElementById('stat-last').textContent  = '—';
+        document.getElementById('donut-correct').textContent = '—';
+        document.getElementById('donut-wrong').textContent   = '—';
+        drawDonut(0, 0, 1);
+        drawLineChart([], []);
+        drawActivityCalendar([]);
+        document.getElementById('history-tbody').innerHTML =
+          '<tr><td colspan="4" style="text-align:center;color:#636880;padding:1.5rem;">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
+        return;
+      }
+
       const pcts  = results.map(r => r.percentage ?? Math.round(r.score/r.total*100));
       const best  = Math.max(...pcts);
       const avg   = Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length);
@@ -83,7 +96,6 @@
       document.getElementById('stat-count').textContent = results.length;
       document.getElementById('stat-last').textContent  = last+'%';
       document.getElementById('stat-last').style.color  = last>=80?'#3fb950':last>=60?'#EF9F27':'#f85149';
-      document.getElementById('results-section').style.display='block';
 
       // ── Donut chart ────────────────────────────────────────────────────────
       drawDonut(lRes.score, lRes.wrong ?? (lRes.total - lRes.score), lRes.total);
@@ -110,7 +122,6 @@
           <td style="color:#f85149;">${r.wrong??(r.total-r.score)}</td>
         </tr>`;
       }).join('');
-      document.getElementById('history-section').style.display='block';
 
     } catch(e){ console.error('Results error:',e); }
   }
@@ -127,6 +138,15 @@
     // Track
     ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
     ctx.strokeStyle='#252838'; ctx.lineWidth=lw; ctx.stroke();
+
+    // Empty state
+    if(total <= 1 && score === 0 && wrong === 0){
+      ctx.fillStyle='#636880'; ctx.font='11px Plus Jakarta Sans';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('Δεν υπάρχουν', cx, cy-8);
+      ctx.fillText('δεδομένα', cx, cy+10);
+      return;
+    }
 
     const pct   = score/total;
     const start = -Math.PI/2;
@@ -423,9 +443,9 @@ tbody td{padding:0.65rem 1rem;font-size:0.83rem;color:var(--text2);}
 .info-item-lbl{font-size:0.65rem;color:var(--text3);}
 
 #no-results{display:none;text-align:center;padding:2rem;color:var(--text3);font-size:0.85rem;}
-#results-section{display:none;}
-#activity-section{display:none;margin-bottom:1.5rem;}
-#history-section{display:none;}
+#results-section{display:block;}
+#activity-section{display:block;margin-bottom:1.5rem;}
+#history-section{display:block;}
 
 @media(max-width:640px){
   .top-row{grid-template-columns:1fr;}
