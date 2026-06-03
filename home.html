@@ -425,6 +425,20 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 .action-row{display:flex;gap:0.875rem;margin-bottom:2rem;}
 .btn-new{flex:1;padding:0.95rem;background:var(--gold);color:#0b0d14;border:none;border-radius:var(--radius);font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;display:block;}
 .btn-new:hover{background:var(--gold2);}
+/* Mode selection cards */
+.mode-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem;}
+.mode-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);
+  padding:1.5rem 1.25rem;text-decoration:none;display:block;transition:border-color 0.15s,transform 0.12s,box-shadow 0.15s;}
+.mode-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 8px 24px rgba(239,159,39,0.12);}
+.mode-card--sim{border-color:rgba(88,166,255,0.3);}
+.mode-card--sim:hover{border-color:#58a6ff;box-shadow:0 8px 24px rgba(88,166,255,0.12);}
+.mode-icon{font-size:2rem;margin-bottom:0.75rem;}
+.mode-title{font-family:'Lora',Georgia,serif;font-size:1rem;font-weight:700;color:var(--text);margin-bottom:0.4rem;}
+.mode-desc{font-size:0.78rem;color:var(--text3);line-height:1.6;margin-bottom:1rem;}
+.mode-btn{display:inline-block;padding:0.55rem 1.25rem;border-radius:8px;font-size:0.82rem;font-weight:700;font-family:'Plus Jakarta Sans',system-ui,sans-serif;}
+.mode-card:not(.mode-card--sim) .mode-btn{background:var(--gold);color:#0b0d14;}
+.mode-card--sim .mode-btn{background:#58a6ff;color:#0b0d14;}
+@media(max-width:520px){.mode-row{grid-template-columns:1fr;}}
 
 /* History */
 .section-title{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.75rem;}
@@ -561,9 +575,21 @@ tbody td{padding:0.65rem 1rem;font-size:0.83rem;color:var(--text2);}
       Δεν έχεις ακόμα ολοκληρώσει κάποια προσπάθεια. Ξεκίνα τώρα!
     </div>
 
-    <!-- Action -->
-    <div class="action-row">
-      <a href="quiz.html" class="btn-new">🚀 Νέα Προσπάθεια</a>
+    <!-- Mode Selection -->
+    <div class="section-title" style="margin-bottom:0.875rem;">🎯 Επιλογή Λειτουργίας</div>
+    <div class="mode-row">
+      <a href="quiz.html" class="mode-card">
+        <div class="mode-icon">📚</div>
+        <div class="mode-title">Εκπαιδευτικό Quiz</div>
+        <div class="mode-desc">Εξάσκηση ανά κατηγορία, χωρίς χρονόμετρο. Δείτε εξηγήσεις για κάθε απάντηση.</div>
+        <span class="mode-btn">Ξεκινήστε →</span>
+      </a>
+      <a href="simulation.html" class="mode-card mode-card--sim">
+        <div class="mode-icon">🎯</div>
+        <div class="mode-title">Τεστ Προσομοίωσης</div>
+        <div class="mode-desc">20 θεωρητικές + 2 σενάρια · 60 λεπτά · Βαθμολόγηση ΕΟΠΠΕΠ</div>
+        <span class="mode-btn">Έναρξη Εξέτασης →</span>
+      </a>
     </div>
 
     <!-- History -->
