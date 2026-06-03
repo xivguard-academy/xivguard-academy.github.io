@@ -44,9 +44,10 @@
     window._progressUid = user.uid;
     window._db = db; window._fbDoc = doc; window._fbDeleteDoc = deleteDoc;
 
-    await Promise.all([ loadProgress(user,db), loadResults(user,db) ]);
+    await Promise.all([ loadProgress(user,db), loadQuizResults(user,db), loadSimResults(user,db) ]);
   });
 
+  // ── Progress ──────────────────────────────────────────────────────────────────
   async function loadProgress(user, db){
     try {
       const snap = await getDoc(doc(db,'progress',user.uid));
@@ -62,25 +63,25 @@
     } catch(e){}
   }
 
-  async function loadResults(user, db){
+  // ── Quiz Results ──────────────────────────────────────────────────────────────
+  async function loadQuizResults(user, db){
     try {
       const q    = query(collection(db,'quizResults'), where('uid','==',user.uid), orderBy('completedAt','desc'), limit(30));
       const snap = await getDocs(q);
       const results = [];
       snap.forEach(d => results.push(d.data()));
 
-      // ── Stats ──────────────────────────────────────────────────────────────
       if(results.length === 0){
-        document.getElementById('stat-best').textContent  = '—';
-        document.getElementById('stat-avg').textContent   = '—';
-        document.getElementById('stat-count').textContent = '0';
-        document.getElementById('stat-last').textContent  = '—';
-        document.getElementById('donut-correct').textContent = '—';
-        document.getElementById('donut-wrong').textContent   = '—';
-        drawDonut(0, 0, 1);
-        drawLineChart([], []);
-        drawActivityCalendar([]);
-        document.getElementById('history-tbody').innerHTML =
+        document.getElementById('q-stat-best').textContent  = '—';
+        document.getElementById('q-stat-avg').textContent   = '—';
+        document.getElementById('q-stat-count').textContent = '0';
+        document.getElementById('q-stat-last').textContent  = '—';
+        document.getElementById('q-donut-a').textContent = '—';
+        document.getElementById('q-donut-b').textContent = '—';
+        drawQuizDonut(0, 0, 1);
+        drawQuizLine([], []);
+        drawQuizCal([]);
+        document.getElementById('q-history-tbody').innerHTML =
           '<tr><td colspan="4" style="text-align:center;color:#636880;padding:1.5rem;">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
         return;
       }
@@ -91,25 +92,17 @@
       const last  = pcts[0];
       const lRes  = results[0];
 
-      document.getElementById('stat-best').textContent  = best+'%';
-      document.getElementById('stat-avg').textContent   = avg+'%';
-      document.getElementById('stat-count').textContent = results.length;
-      document.getElementById('stat-last').textContent  = last+'%';
-      document.getElementById('stat-last').style.color  = last>=80?'#3fb950':last>=60?'#EF9F27':'#f85149';
+      document.getElementById('q-stat-best').textContent  = best+'%';
+      document.getElementById('q-stat-avg').textContent   = avg+'%';
+      document.getElementById('q-stat-count').textContent = results.length;
+      document.getElementById('q-stat-last').textContent  = last+'%';
+      document.getElementById('q-stat-last').style.color  = last>=80?'#3fb950':last>=60?'#EF9F27':'#f85149';
 
-      // ── Donut chart ────────────────────────────────────────────────────────
-      drawDonut(lRes.score, lRes.wrong ?? (lRes.total - lRes.score), lRes.total);
+      drawQuizDonut(lRes.score, lRes.wrong ?? (lRes.total - lRes.score), lRes.total);
+      drawQuizLine([...pcts].reverse(), [...results].reverse());
+      drawQuizCal(results);
 
-      // ── Line chart ─────────────────────────────────────────────────────────
-      const chronoPcts = [...pcts].reverse();
-      const chronoResults = [...results].reverse();
-      drawLineChart(chronoPcts, chronoResults);
-
-      // ── Activity calendar ──────────────────────────────────────────────────
-      drawActivityCalendar(results);
-
-      // ── History table ──────────────────────────────────────────────────────
-      const tbody = document.getElementById('history-tbody');
+      const tbody = document.getElementById('q-history-tbody');
       tbody.innerHTML = results.slice(0,5).map((r,i) => {
         const pct   = r.percentage ?? Math.round(r.score/r.total*100);
         const color = pct>=80?'#3fb950':pct>=60?'#EF9F27':'#f85149';
@@ -123,141 +116,229 @@
         </tr>`;
       }).join('');
 
-    } catch(e){ console.error('Results error:',e); }
+    } catch(e){ console.error('Quiz results error:',e); }
   }
 
-  // ── Donut Chart ─────────────────────────────────────────────────────────────
-  function drawDonut(score, wrong, total){
-    const canvas = document.getElementById('donut-canvas');
+  // ── Simulation Results ────────────────────────────────────────────────────────
+  async function loadSimResults(user, db){
+    try {
+      const q    = query(collection(db,'simulationResults'), where('uid','==',user.uid), orderBy('completedAt','desc'), limit(30));
+      const snap = await getDocs(q);
+      const results = [];
+      snap.forEach(d => results.push(d.data()));
+
+      if(results.length === 0){
+        document.getElementById('s-stat-best').textContent  = '—';
+        document.getElementById('s-stat-avg').textContent   = '—';
+        document.getElementById('s-stat-count').textContent = '0';
+        document.getElementById('s-stat-last').textContent  = '—';
+        document.getElementById('s-donut-a').textContent = '—';
+        document.getElementById('s-donut-b').textContent = '—';
+        drawSimDonut(0, 0);
+        drawSimLine([], []);
+        drawSimCal([]);
+        document.getElementById('s-history-tbody').innerHTML =
+          '<tr><td colspan="5" style="text-align:center;color:#636880;padding:1.5rem;">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
+        return;
+      }
+
+      const avgs  = results.map(r => r.average ?? ((r.partAScore + r.partBScore) / 2));
+      const best  = Math.max(...avgs).toFixed(1);
+      const avg   = (avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(1);
+      const last  = avgs[0];
+      const lRes  = results[0];
+
+      document.getElementById('s-stat-best').textContent  = best;
+      document.getElementById('s-stat-avg').textContent   = avg;
+      document.getElementById('s-stat-count').textContent = results.length;
+      document.getElementById('s-stat-last').textContent  = last.toFixed(1) + (lRes.passed ? ' ✓' : ' ✗');
+      document.getElementById('s-stat-last').style.color  = lRes.passed ? '#3fb950' : '#f85149';
+
+      drawSimDonut(lRes.partAScore, lRes.partBScore);
+      drawSimLine([...avgs].reverse(), [...results].reverse());
+      drawSimCal(results);
+
+      const tbody = document.getElementById('s-history-tbody');
+      tbody.innerHTML = results.slice(0,5).map((r,i) => {
+        const avg   = r.average ?? ((r.partAScore + r.partBScore) / 2);
+        const color = avg>=10 ? '#3fb950' : '#f85149';
+        const date  = r.completedAt ? r.completedAt.toDate().toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+        const medal = i===0?'🏆':'';
+        return `<tr>
+          <td>${medal} ${date}</td>
+          <td>${r.partAScore}/20</td>
+          <td>${r.partBScore}/20</td>
+          <td style="color:${color};font-weight:700;">${avg.toFixed(1)}</td>
+          <td style="font-weight:700;color:${color};">${r.passed ? '✓' : '✗'}</td>
+        </tr>`;
+      }).join('');
+
+    } catch(e){ console.error('Sim results error:',e); }
+  }
+
+  // ── Quiz: Donut Chart ─────────────────────────────────────────────────────────
+  function drawQuizDonut(score, wrong, total){
+    const canvas = document.getElementById('q-donut-canvas');
     const ctx    = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
     const cx = W/2, cy = H/2, r = Math.min(cx,cy)-22, lw = 20;
-
     ctx.clearRect(0,0,W,H);
-
-    // Track
     ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
     ctx.strokeStyle='#252838'; ctx.lineWidth=lw; ctx.stroke();
-
-    // Empty state
     if(total <= 1 && score === 0 && wrong === 0){
       ctx.fillStyle='#636880'; ctx.font='11px Plus Jakarta Sans';
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('Δεν υπάρχουν', cx, cy-8);
-      ctx.fillText('δεδομένα', cx, cy+10);
-      return;
+      ctx.fillText('δεδομένα', cx, cy+10); return;
     }
-
-    const pct   = score/total;
+    const pct = score/total;
     const start = -Math.PI/2;
-
-    // Wrong arc
     if(wrong > 0){
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, start + pct*Math.PI*2, start + Math.PI*2);
+      ctx.beginPath(); ctx.arc(cx,cy,r,start+pct*Math.PI*2,start+Math.PI*2);
       ctx.strokeStyle='#f85149'; ctx.lineWidth=lw; ctx.stroke();
     }
-    // Correct arc
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, start, start + pct*Math.PI*2);
+    ctx.beginPath(); ctx.arc(cx,cy,r,start,start+pct*Math.PI*2);
     ctx.strokeStyle='#3fb950'; ctx.lineWidth=lw; ctx.stroke();
-
-    // Center text
     const p = Math.round(pct*100);
     ctx.fillStyle = p>=80?'#3fb950':p>=60?'#EF9F27':'#f85149';
-    ctx.font = 'bold 32px Plus Jakarta Sans';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='bold 28px Plus Jakarta Sans'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(p+'%', cx, cy-10);
-    ctx.fillStyle='#636880'; ctx.font='11px Plus Jakarta Sans';
+    ctx.fillStyle='#636880'; ctx.font='10px Plus Jakarta Sans';
     ctx.fillText('τελευταία', cx, cy+14);
-
-    // Legend
-    document.getElementById('donut-correct').textContent = score;
-    document.getElementById('donut-wrong').textContent   = wrong;
+    document.getElementById('q-donut-a').textContent = score;
+    document.getElementById('q-donut-b').textContent = wrong;
   }
 
-  // ── Line Chart ──────────────────────────────────────────────────────────────
-  function drawLineChart(pcts, results){
-    const canvas = document.getElementById('line-canvas');
+  // ── Sim: Donut Chart ──────────────────────────────────────────────────────────
+  function drawSimDonut(partA, partB){
+    const canvas = document.getElementById('s-donut-canvas');
     const ctx    = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
-    const pad = {top:20, right:20, bottom:36, left:42};
-    const cW = W - pad.left - pad.right;
-    const cH = H - pad.top  - pad.bottom;
-
+    const cx = W/2, cy = H/2, r = Math.min(cx,cy)-22, lw = 20;
     ctx.clearRect(0,0,W,H);
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.strokeStyle='#252838'; ctx.lineWidth=lw; ctx.stroke();
+    if(partA === 0 && partB === 0){
+      ctx.fillStyle='#636880'; ctx.font='11px Plus Jakarta Sans';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('Δεν υπάρχουν', cx, cy-8);
+      ctx.fillText('δεδομένα', cx, cy+10); return;
+    }
+    const total = 40; // max 20+20
+    const fracA = partA / total;
+    const fracB = partB / total;
+    const start = -Math.PI/2;
+    // Part B arc (blue)
+    if(partB > 0){
+      ctx.beginPath(); ctx.arc(cx,cy,r, start+fracA*Math.PI*2, start+(fracA+fracB)*Math.PI*2);
+      ctx.strokeStyle='#58a6ff'; ctx.lineWidth=lw; ctx.stroke();
+    }
+    // Part A arc (gold)
+    if(partA > 0){
+      ctx.beginPath(); ctx.arc(cx,cy,r,start,start+fracA*Math.PI*2);
+      ctx.strokeStyle='#EF9F27'; ctx.lineWidth=lw; ctx.stroke();
+    }
+    const avg = ((partA+partB)/2).toFixed(1);
+    const color = parseFloat(avg)>=10?'#3fb950':'#f85149';
+    ctx.fillStyle=color; ctx.font='bold 26px Plus Jakarta Sans';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(avg, cx, cy-10);
+    ctx.fillStyle='#636880'; ctx.font='10px Plus Jakarta Sans';
+    ctx.fillText('μ.ο. /20', cx, cy+14);
+    document.getElementById('s-donut-a').textContent = partA+'/20';
+    document.getElementById('s-donut-b').textContent = partB+'/20';
+  }
 
+  // ── Quiz: Line Chart ──────────────────────────────────────────────────────────
+  function drawQuizLine(pcts, results){
+    const canvas = document.getElementById('q-line-canvas');
+    const ctx    = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const pad = {top:20,right:20,bottom:36,left:42};
+    const cW = W-pad.left-pad.right, cH = H-pad.top-pad.bottom;
+    ctx.clearRect(0,0,W,H);
     if(pcts.length < 1) return;
-
     const n = pcts.length;
-    const xStep = n > 1 ? cW/(n-1) : cW/2;
-
-    // Grid lines & Y labels
+    const xStep = n>1 ? cW/(n-1) : cW/2;
     [0,20,40,60,80,100].forEach(v => {
-      const y = pad.top + cH - (v/100)*cH;
-      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left+cW, y);
-      ctx.strokeStyle = v===80 ? 'rgba(63,185,80,0.25)' : 'rgba(255,255,255,0.05)';
+      const y = pad.top+cH-(v/100)*cH;
+      ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(pad.left+cW,y);
+      ctx.strokeStyle=v===80?'rgba(63,185,80,0.25)':'rgba(255,255,255,0.05)';
       ctx.lineWidth=1; ctx.setLineDash(v===80?[4,4]:[]); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle='#636880'; ctx.font='10px Plus Jakarta Sans';
-      ctx.textAlign='right'; ctx.textBaseline='middle';
-      ctx.fillText(v+'%', pad.left-6, y);
+      ctx.fillStyle='#636880'; ctx.font='9px Plus Jakarta Sans';
+      ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(v+'%',pad.left-4,y);
     });
-
-    // 80% label
-    const y80 = pad.top + cH - 0.8*cH;
-    ctx.fillStyle='rgba(63,185,80,0.5)'; ctx.font='9px Plus Jakarta Sans';
-    ctx.textAlign='left'; ctx.fillText('80% στόχος', pad.left+4, y80-7);
-
-    // Area fill under line
+    const y80=pad.top+cH-0.8*cH;
+    ctx.fillStyle='rgba(63,185,80,0.5)'; ctx.font='8px Plus Jakarta Sans';
+    ctx.textAlign='left'; ctx.fillText('80%',pad.left+4,y80-6);
     ctx.beginPath();
-    pcts.forEach((p,i) => {
-      const x = pad.left + i*xStep;
-      const y = pad.top  + cH - (p/100)*cH;
-      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
-    });
-    const lastX = pad.left + (n-1)*xStep;
-    ctx.lineTo(lastX, pad.top+cH); ctx.lineTo(pad.left, pad.top+cH); ctx.closePath();
-    const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top+cH);
-    grad.addColorStop(0,'rgba(239,159,39,0.18)');
-    grad.addColorStop(1,'rgba(239,159,39,0)');
+    pcts.forEach((p,i)=>{ const x=pad.left+i*xStep,y=pad.top+cH-(p/100)*cH; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+    const lastX=pad.left+(n-1)*xStep;
+    ctx.lineTo(lastX,pad.top+cH); ctx.lineTo(pad.left,pad.top+cH); ctx.closePath();
+    const grad=ctx.createLinearGradient(0,pad.top,0,pad.top+cH);
+    grad.addColorStop(0,'rgba(239,159,39,0.18)'); grad.addColorStop(1,'rgba(239,159,39,0)');
     ctx.fillStyle=grad; ctx.fill();
-
-    // Line
     ctx.beginPath();
-    pcts.forEach((p,i) => {
-      const x = pad.left + i*xStep;
-      const y = pad.top  + cH - (p/100)*cH;
-      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
-    });
-    ctx.strokeStyle='#EF9F27'; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.stroke();
-
-    // Dots + X labels
-    pcts.forEach((p,i) => {
-      const x = pad.left + i*xStep;
-      const y = pad.top  + cH - (p/100)*cH;
-      const c = p>=80?'#3fb950':p>=60?'#EF9F27':'#f85149';
-
-      ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
-      ctx.fillStyle='#0b0d14'; ctx.fill();
-      ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2);
-      ctx.fillStyle=c; ctx.fill();
-
-      // X label (date)
-      if(results[i] && results[i].completedAt){
-        const d = results[i].completedAt.toDate();
-        const lbl = (n<=8) ? d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}) : (i===0||i===n-1?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):'');
-        if(lbl){
-          ctx.fillStyle='#636880'; ctx.font='9px Plus Jakarta Sans';
-          ctx.textAlign='center'; ctx.textBaseline='top';
-          ctx.fillText(lbl, x, pad.top+cH+6);
-        }
+    pcts.forEach((p,i)=>{ const x=pad.left+i*xStep,y=pad.top+cH-(p/100)*cH; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+    ctx.strokeStyle='#EF9F27'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.stroke();
+    pcts.forEach((p,i)=>{
+      const x=pad.left+i*xStep,y=pad.top+cH-(p/100)*cH,c=p>=80?'#3fb950':p>=60?'#EF9F27':'#f85149';
+      ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fillStyle='#0b0d14'; ctx.fill();
+      ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fillStyle=c; ctx.fill();
+      if(results[i]&&results[i].completedAt){
+        const d=results[i].completedAt.toDate();
+        const lbl=(n<=6)?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):(i===0||i===n-1?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):'');
+        if(lbl){ ctx.fillStyle='#636880'; ctx.font='8px Plus Jakarta Sans'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(lbl,x,pad.top+cH+4); }
       }
     });
   }
 
-  // ── Activity Calendar ────────────────────────────────────────────────────────
-  function drawActivityCalendar(results){
-    // Build date → count map
+  // ── Sim: Line Chart ───────────────────────────────────────────────────────────
+  function drawSimLine(avgs, results){
+    const canvas = document.getElementById('s-line-canvas');
+    const ctx    = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const pad = {top:20,right:20,bottom:36,left:42};
+    const cW = W-pad.left-pad.right, cH = H-pad.top-pad.bottom;
+    ctx.clearRect(0,0,W,H);
+    if(avgs.length < 1) return;
+    const n = avgs.length;
+    const xStep = n>1 ? cW/(n-1) : cW/2;
+    [0,5,10,15,20].forEach(v => {
+      const y = pad.top+cH-(v/20)*cH;
+      ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(pad.left+cW,y);
+      ctx.strokeStyle=v===10?'rgba(63,185,80,0.25)':'rgba(255,255,255,0.05)';
+      ctx.lineWidth=1; ctx.setLineDash(v===10?[4,4]:[]); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle='#636880'; ctx.font='9px Plus Jakarta Sans';
+      ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(v,pad.left-4,y);
+    });
+    const y10=pad.top+cH-0.5*cH;
+    ctx.fillStyle='rgba(63,185,80,0.5)'; ctx.font='8px Plus Jakarta Sans';
+    ctx.textAlign='left'; ctx.fillText('10 βάση',pad.left+4,y10-6);
+    ctx.beginPath();
+    avgs.forEach((a,i)=>{ const x=pad.left+i*xStep,y=pad.top+cH-(a/20)*cH; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+    const lastX=pad.left+(n-1)*xStep;
+    ctx.lineTo(lastX,pad.top+cH); ctx.lineTo(pad.left,pad.top+cH); ctx.closePath();
+    const grad=ctx.createLinearGradient(0,pad.top,0,pad.top+cH);
+    grad.addColorStop(0,'rgba(88,166,255,0.18)'); grad.addColorStop(1,'rgba(88,166,255,0)');
+    ctx.fillStyle=grad; ctx.fill();
+    ctx.beginPath();
+    avgs.forEach((a,i)=>{ const x=pad.left+i*xStep,y=pad.top+cH-(a/20)*cH; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+    ctx.strokeStyle='#58a6ff'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.stroke();
+    avgs.forEach((a,i)=>{
+      const x=pad.left+i*xStep,y=pad.top+cH-(a/20)*cH,c=a>=10?'#3fb950':'#f85149';
+      ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fillStyle='#0b0d14'; ctx.fill();
+      ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fillStyle=c; ctx.fill();
+      if(results[i]&&results[i].completedAt){
+        const d=results[i].completedAt.toDate();
+        const lbl=(n<=6)?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):(i===0||i===n-1?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):'');
+        if(lbl){ ctx.fillStyle='#636880'; ctx.font='8px Plus Jakarta Sans'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(lbl,x,pad.top+cH+4); }
+      }
+    });
+  }
+
+  // ── Shared Calendar Logic ─────────────────────────────────────────────────────
+  function drawCal(results, gridId, monthsId){
     const dateMap = {};
     results.forEach(r => {
       if(!r.completedAt) return;
@@ -265,68 +346,37 @@
       const key = d.toISOString().slice(0,10);
       dateMap[key] = (dateMap[key]||0) + 1;
     });
-
-    // Last 24 weeks (168 days)
     const today  = new Date();
     const WEEKS  = 24;
-    const DAYS   = WEEKS * 7;
     const start  = new Date(today);
-    start.setDate(today.getDate() - DAYS + 1);
-
-    // Align to Monday
-    const dayOfWeek = (start.getDay()+6)%7; // 0=Mon
+    start.setDate(today.getDate() - WEEKS*7 + 1);
+    const dayOfWeek = (start.getDay()+6)%7;
     start.setDate(start.getDate() - dayOfWeek);
-
-    const grid = document.getElementById('cal-grid');
-    grid.innerHTML = '';
-
-    // Month labels
-    const months = document.getElementById('cal-months');
-    months.innerHTML = '';
+    const grid   = document.getElementById(gridId);
+    const months = document.getElementById(monthsId);
+    grid.innerHTML = ''; months.innerHTML = '';
     let lastMonth = -1;
     const monthNames = ['Ιαν','Φεβ','Μαρ','Απρ','Μαΐ','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
-
     for(let w=0; w<WEEKS; w++){
-      const col = document.createElement('div');
-      col.className = 'cal-col';
-
+      const col = document.createElement('div'); col.className='cal-col';
       for(let d=0; d<7; d++){
-        const date = new Date(start);
-        date.setDate(start.getDate() + w*7 + d);
+        const date = new Date(start); date.setDate(start.getDate()+w*7+d);
         const key   = date.toISOString().slice(0,10);
-        const count = dateMap[key] || 0;
+        const count = dateMap[key]||0;
         const isFut = date > today;
-
-        const cell = document.createElement('div');
-        cell.className = 'cal-cell';
-        if(!isFut){
-          if(count===0) cell.classList.add('cal-empty');
-          else if(count===1) cell.classList.add('cal-low');
-          else if(count>=2) cell.classList.add('cal-high');
-        } else {
-          cell.classList.add('cal-future');
-        }
-        cell.title = key + (count>0?` (${count} προσπάθεια)`:'');
+        const cell  = document.createElement('div'); cell.className='cal-cell';
+        if(!isFut){ if(count===0) cell.classList.add('cal-empty'); else if(count===1) cell.classList.add('cal-low'); else cell.classList.add('cal-high'); }
+        else cell.classList.add('cal-future');
+        cell.title = key+(count>0?` (${count} προσπάθεια)`:'');
         col.appendChild(cell);
-
-        // Month label for first day of month
-        if(d===0){
-          const m = date.getMonth();
-          if(m !== lastMonth && date <= today){
-            const lbl = document.createElement('div');
-            lbl.className = 'cal-month-lbl';
-            lbl.textContent = monthNames[m];
-            lbl.style.gridColumn = (w+1)+'';
-            months.appendChild(lbl);
-            lastMonth = m;
-          }
-        }
+        if(d===0){ const m=date.getMonth(); if(m!==lastMonth&&date<=today){ const lbl=document.createElement('div'); lbl.className='cal-month-lbl'; lbl.textContent=monthNames[m]; lbl.style.gridColumn=(w+1)+''; months.appendChild(lbl); lastMonth=m; } }
       }
       grid.appendChild(col);
     }
-
-    document.getElementById('activity-section').style.display='block';
   }
+
+  function drawQuizCal(results){ drawCal(results,'q-cal-grid','q-cal-months'); }
+  function drawSimCal(results) { drawCal(results,'s-cal-grid','s-cal-months'); }
 
   window.discardProgress = async () => {
     if(!confirm('Να διαγραφεί η αποθηκευμένη πρόοδος;')) return;
@@ -343,7 +393,7 @@
   --border:#252838;--border2:#2e3248;
   --gold:#EF9F27;--gold2:#f5c842;
   --text:#e8eaf2;--text2:#9aa0bc;--text3:#636880;
-  --green:#3fb950;--red:#f85149;
+  --green:#3fb950;--red:#f85149;--blue:#58a6ff;
   --radius:12px;--radius-sm:8px;
 }
 body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;
@@ -364,7 +414,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 .btn-logout:hover{background:rgba(248,81,73,0.2);}
 
 /* Main */
-.main{max-width:900px;margin:0 auto;padding:2rem 1.25rem 4rem;}
+.main{max-width:1200px;margin:0 auto;padding:2rem 1.25rem 4rem;}
 
 /* Welcome */
 .welcome{margin-bottom:1.75rem;}
@@ -385,87 +435,86 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 .btn-discard{padding:0.7rem 1rem;background:transparent;color:var(--text3);border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-family:inherit;font-size:0.8rem;cursor:pointer;}
 .btn-discard:hover{border-color:var(--red);color:var(--red);}
 
-/* Top row: stats + donut */
-.top-row{display:grid;grid-template-columns:1fr auto;gap:1.25rem;margin-bottom:1.5rem;align-items:start;}
-.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem;}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center;}
-.stat-icon{font-size:1.1rem;margin-bottom:0.3rem;}
-.stat-val{font-size:1.5rem;font-weight:800;color:var(--gold);font-family:'Lora',Georgia,serif;margin-bottom:0.15rem;}
-.stat-lbl{font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;}
+/* Dashboard grid */
+.dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start;}
 
-/* Donut */
-.donut-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;text-align:center;min-width:175px;}
-.donut-title{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.75rem;}
-#donut-canvas{display:block;margin:0 auto;}
-.donut-legend{display:flex;justify-content:center;gap:1.25rem;margin-top:0.75rem;}
-.legend-item{display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:var(--text2);}
-.legend-dot{width:8px;height:8px;border-radius:50%;}
+/* Panel */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;display:flex;flex-direction:column;gap:1rem;}
+.panel-header{display:flex;align-items:center;gap:0.625rem;padding-bottom:0.875rem;border-bottom:1px solid var(--border);}
+.panel-icon{font-size:1.25rem;}
+.panel-title{font-family:'Lora',Georgia,serif;font-size:1rem;font-weight:700;color:var(--text);}
+.panel-badge{margin-left:auto;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:0.2rem 0.6rem;border-radius:20px;}
+.panel-badge--quiz{background:rgba(239,159,39,0.12);color:var(--gold);border:1px solid rgba(239,159,39,0.3);}
+.panel-badge--sim{background:rgba(88,166,255,0.12);color:var(--blue);border:1px solid rgba(88,166,255,0.3);}
 
-/* Charts */
-.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem;}
-.chart-title{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:1rem;}
-#line-canvas{display:block;width:100%;height:160px;}
+/* Stats grid inside panel */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.625rem;}
+.stat-card{background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:0.75rem;text-align:center;}
+.stat-icon{font-size:1rem;margin-bottom:0.2rem;}
+.stat-val{font-size:1.25rem;font-weight:800;color:var(--gold);font-family:'Lora',Georgia,serif;margin-bottom:0.1rem;}
+.stat-lbl{font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;}
 
-/* Activity calendar */
+/* Donut inside panel */
+.donut-row{display:flex;align-items:center;gap:1rem;}
+.donut-canvas-wrap{flex-shrink:0;}
+.donut-legend{display:flex;flex-direction:column;gap:0.5rem;flex:1;}
+.donut-title{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.5rem;}
+.legend-item{display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;color:var(--text2);}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* Chart card inside panel */
+.chart-inner{background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:0.875rem;}
+.chart-label{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.75rem;}
+canvas.line-canvas{display:block;width:100%;height:130px;}
+
+/* Calendar inside panel */
 .cal-outer{overflow-x:auto;padding-bottom:0.5rem;}
 .cal-months{display:flex;gap:0;margin-bottom:4px;min-width:max-content;}
-.cal-month-lbl{font-size:0.65rem;color:var(--text3);width:calc(13px + 3px);text-align:left;}
-.cal-grid{display:flex;gap:3px;min-width:max-content;}
-.cal-col{display:flex;flex-direction:column;gap:3px;}
-.cal-cell{width:13px;height:13px;border-radius:2px;}
+.cal-month-lbl{font-size:0.6rem;color:var(--text3);width:calc(11px + 3px);text-align:left;}
+.cal-grid{display:flex;gap:2px;min-width:max-content;}
+.cal-col{display:flex;flex-direction:column;gap:2px;}
+.cal-cell{width:11px;height:11px;border-radius:2px;}
 .cal-empty{background:#1a1d2a;}
 .cal-low{background:rgba(239,159,39,0.45);}
 .cal-high{background:#EF9F27;}
 .cal-future{background:#13151f;opacity:0.3;}
-.cal-legend{display:flex;align-items:center;gap:6px;margin-top:8px;justify-content:flex-end;}
-.cal-legend span{font-size:0.65rem;color:var(--text3);}
-.cal-legend-cell{width:11px;height:11px;border-radius:2px;}
+.cal-legend{display:flex;align-items:center;gap:4px;margin-top:6px;justify-content:flex-end;}
+.cal-legend span{font-size:0.6rem;color:var(--text3);}
+.cal-legend-cell{width:10px;height:10px;border-radius:2px;}
 
-/* Action buttons */
-.action-row{display:flex;gap:0.875rem;margin-bottom:2rem;}
-.btn-new{flex:1;padding:0.95rem;background:var(--gold);color:#0b0d14;border:none;border-radius:var(--radius);font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;display:block;}
-.btn-new:hover{background:var(--gold2);}
-/* Mode selection cards */
-.mode-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem;}
-.mode-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);
-  padding:1.5rem 1.25rem;text-decoration:none;display:block;transition:border-color 0.15s,transform 0.12s,box-shadow 0.15s;}
-.mode-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 8px 24px rgba(239,159,39,0.12);}
-.mode-card--sim{border-color:rgba(88,166,255,0.3);}
-.mode-card--sim:hover{border-color:#58a6ff;box-shadow:0 8px 24px rgba(88,166,255,0.12);}
-.mode-icon{font-size:2rem;margin-bottom:0.75rem;}
-.mode-title{font-family:'Lora',Georgia,serif;font-size:1rem;font-weight:700;color:var(--text);margin-bottom:0.4rem;}
-.mode-desc{font-size:0.78rem;color:var(--text3);line-height:1.6;margin-bottom:1rem;}
-.mode-btn{display:inline-block;padding:0.55rem 1.25rem;border-radius:8px;font-size:0.82rem;font-weight:700;font-family:'Plus Jakarta Sans',system-ui,sans-serif;}
-.mode-card:not(.mode-card--sim) .mode-btn{background:var(--gold);color:#0b0d14;}
-.mode-card--sim .mode-btn{background:#58a6ff;color:#0b0d14;}
-@media(max-width:520px){.mode-row{grid-template-columns:1fr;}}
-
-/* History */
-.section-title{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.75rem;}
-.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem;}
+/* History table inside panel */
+.section-label{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.5rem;}
+.table-wrap{background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);overflow:hidden;}
 table{width:100%;border-collapse:collapse;}
-thead th{background:var(--surface2);font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);padding:0.6rem 1rem;text-align:left;}
+thead th{background:var(--surface2);font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);padding:0.5rem 0.75rem;text-align:left;}
 tbody tr{border-top:1px solid var(--border);}
 tbody tr:hover{background:rgba(255,255,255,0.015);}
-tbody td{padding:0.65rem 1rem;font-size:0.83rem;color:var(--text2);}
+tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
+
+/* Mode card at bottom of panel */
+.mode-link{display:flex;align-items:center;justify-content:center;gap:0.625rem;padding:0.875rem;border-radius:var(--radius-sm);text-decoration:none;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:0.9rem;font-weight:700;transition:opacity 0.15s,transform 0.12s;margin-top:auto;}
+.mode-link:hover{opacity:0.9;transform:translateY(-1px);}
+.mode-link--quiz{background:var(--gold);color:#0b0d14;}
+.mode-link--sim{background:var(--blue);color:#0b0d14;}
 
 /* Info card */
-.info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;}
+.info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-top:1.5rem;}
+.section-title{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.75rem;}
 .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin-top:0.875rem;}
 .info-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.875rem;text-align:center;}
 .info-item-val{font-size:1.2rem;font-weight:800;color:var(--text);margin-bottom:0.2rem;}
 .info-item-lbl{font-size:0.65rem;color:var(--text3);}
 
-#no-results{display:none;text-align:center;padding:2rem;color:var(--text3);font-size:0.85rem;}
-#results-section{display:block;}
-#activity-section{display:block;margin-bottom:1.5rem;}
-#history-section{display:block;}
+/* Sim calendar: blue high color */
+.s-panel .cal-high{background:var(--blue);}
+.s-panel .cal-low{background:rgba(88,166,255,0.4);}
 
+@media(max-width:900px){
+  .dashboard-grid{grid-template-columns:1fr;}
+}
 @media(max-width:640px){
-  .top-row{grid-template-columns:1fr;}
-  .donut-wrap{display:flex;align-items:center;gap:1rem;min-width:unset;}
-  .info-grid{grid-template-columns:repeat(2,1fr);}
   .header-right .user-chip{display:none;}
+  .info-grid{grid-template-columns:repeat(2,1fr);}
 }
 </style>
 </head>
@@ -508,108 +557,184 @@ tbody td{padding:0.65rem 1rem;font-size:0.83rem;color:var(--text2);}
       </div>
     </div>
 
-    <!-- Stats + Donut -->
-    <div id="results-section">
-      <div class="top-row">
+    <!-- Dashboard: Quiz & Simulation side by side -->
+    <div class="dashboard-grid">
+
+      <!-- ── QUIZ PANEL ── -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-icon">📚</span>
+          <span class="panel-title">Εκπαιδευτικό Quiz</span>
+          <span class="panel-badge panel-badge--quiz">Εξάσκηση</span>
+        </div>
+
+        <!-- Stats -->
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon">🏆</div>
-            <div class="stat-val" id="stat-best">—</div>
+            <div class="stat-val" id="q-stat-best">—</div>
             <div class="stat-lbl">Καλύτερο Σκορ</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">📊</div>
-            <div class="stat-val" id="stat-avg">—</div>
+            <div class="stat-val" id="q-stat-avg">—</div>
             <div class="stat-lbl">Μέσος Όρος</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">🔄</div>
-            <div class="stat-val" id="stat-count">—</div>
+            <div class="stat-val" id="q-stat-count">—</div>
             <div class="stat-lbl">Προσπάθειες</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">📅</div>
-            <div class="stat-val" id="stat-last">—</div>
+            <div class="stat-val" id="q-stat-last">—</div>
             <div class="stat-lbl">Τελευταία</div>
           </div>
         </div>
 
-        <!-- Donut chart -->
-        <div class="donut-wrap">
-          <div class="donut-title">Τελευταία Προσπάθεια</div>
-          <canvas id="donut-canvas" width="150" height="150"></canvas>
-          <div class="donut-legend">
-            <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div><span id="donut-correct">—</span> Σωστές</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div><span id="donut-wrong">—</span> Λάθος</div>
+        <!-- Donut -->
+        <div class="chart-inner">
+          <div class="chart-label">Τελευταία Προσπάθεια</div>
+          <div class="donut-row">
+            <div class="donut-canvas-wrap">
+              <canvas id="q-donut-canvas" width="120" height="120"></canvas>
+            </div>
+            <div class="donut-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div>Σωστές: <strong id="q-donut-a">—</strong></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div>Λάθος: <strong id="q-donut-b">—</strong></div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Line chart -->
-      <div class="chart-card">
-        <div class="chart-title">📈 Εξέλιξη Σκορ ανά Προσπάθεια</div>
-        <canvas id="line-canvas" width="800" height="160"></canvas>
-      </div>
-    </div>
-
-    <!-- Activity calendar -->
-    <div id="activity-section">
-      <div class="chart-card">
-        <div class="chart-title">📅 Δραστηριότητα — Τελευταίοι 6 Μήνες</div>
-        <div class="cal-outer">
-          <div class="cal-months" id="cal-months"></div>
-          <div class="cal-grid" id="cal-grid"></div>
+        <!-- Line chart -->
+        <div class="chart-inner">
+          <div class="chart-label">📈 Εξέλιξη Σκορ</div>
+          <canvas id="q-line-canvas" class="line-canvas" width="600" height="130"></canvas>
         </div>
-        <div class="cal-legend">
-          <span>Λιγότερο</span>
-          <div class="cal-legend-cell" style="background:#1a1d2a;"></div>
-          <div class="cal-legend-cell" style="background:rgba(239,159,39,0.45);"></div>
-          <div class="cal-legend-cell" style="background:#EF9F27;"></div>
-          <span>Περισσότερο</span>
+
+        <!-- Calendar -->
+        <div class="chart-inner">
+          <div class="chart-label">📅 Δραστηριότητα — 6 Μήνες</div>
+          <div class="cal-outer">
+            <div class="cal-months" id="q-cal-months"></div>
+            <div class="cal-grid" id="q-cal-grid"></div>
+          </div>
+          <div class="cal-legend">
+            <span>Λιγότερο</span>
+            <div class="cal-legend-cell" style="background:#1a1d2a;"></div>
+            <div class="cal-legend-cell" style="background:rgba(239,159,39,0.45);"></div>
+            <div class="cal-legend-cell" style="background:#EF9F27;"></div>
+            <span>Περισσότερο</span>
+          </div>
         </div>
+
+        <!-- History -->
+        <div>
+          <div class="section-label">📋 Ιστορικό</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Ημερομηνία</th><th>Ποσοστό</th><th>Σωστές</th><th>Λάθος</th></tr></thead>
+              <tbody id="q-history-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Action button -->
+        <a href="quiz.html" class="mode-link mode-link--quiz">📚 Έναρξη Quiz →</a>
       </div>
-    </div>
 
-    <div id="no-results">
-      <div style="font-size:2rem;margin-bottom:0.5rem;">📚</div>
-      Δεν έχεις ακόμα ολοκληρώσει κάποια προσπάθεια. Ξεκίνα τώρα!
-    </div>
+      <!-- ── SIMULATION PANEL ── -->
+      <div class="panel s-panel">
+        <div class="panel-header">
+          <span class="panel-icon">🎯</span>
+          <span class="panel-title">Τεστ Προσομοίωσης</span>
+          <span class="panel-badge panel-badge--sim">ΕΟΠΠΕΠ</span>
+        </div>
 
-    <!-- Mode Selection -->
-    <div class="section-title" style="margin-bottom:0.875rem;">🎯 Επιλογή Λειτουργίας</div>
-    <div class="mode-row">
-      <a href="quiz.html" class="mode-card">
-        <div class="mode-icon">📚</div>
-        <div class="mode-title">Εκπαιδευτικό Quiz</div>
-        <div class="mode-desc">Εξάσκηση ανά κατηγορία, χωρίς χρονόμετρο. Δείτε εξηγήσεις για κάθε απάντηση.</div>
-        <span class="mode-btn">Ξεκινήστε →</span>
-      </a>
-      <a href="simulation.html" class="mode-card mode-card--sim">
-        <div class="mode-icon">🎯</div>
-        <div class="mode-title">Τεστ Προσομοίωσης</div>
-        <div class="mode-desc">20 θεωρητικές + 2 σενάρια · 60 λεπτά · Βαθμολόγηση ΕΟΠΠΕΠ</div>
-        <span class="mode-btn">Έναρξη Εξέτασης →</span>
-      </a>
-    </div>
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-val" id="s-stat-best" style="color:var(--blue)">—</div>
+            <div class="stat-lbl">Καλύτερος Μ.Ο.</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-val" id="s-stat-avg" style="color:var(--blue)">—</div>
+            <div class="stat-lbl">Μέσος Όρος</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🔄</div>
+            <div class="stat-val" id="s-stat-count" style="color:var(--blue)">—</div>
+            <div class="stat-lbl">Προσπάθειες</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-val" id="s-stat-last">—</div>
+            <div class="stat-lbl">Τελευταία</div>
+          </div>
+        </div>
 
-    <!-- History -->
-    <div id="history-section">
-      <div class="section-title">📋 Ιστορικό Προσπαθειών</div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Ημερομηνία</th><th>Ποσοστό</th><th>Σωστές</th><th>Λάθος</th></tr></thead>
-          <tbody id="history-tbody"></tbody>
-        </table>
+        <!-- Donut -->
+        <div class="chart-inner">
+          <div class="chart-label">Τελευταία Προσπάθεια</div>
+          <div class="donut-row">
+            <div class="donut-canvas-wrap">
+              <canvas id="s-donut-canvas" width="120" height="120"></canvas>
+            </div>
+            <div class="donut-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#EF9F27"></div>Μέρος Α: <strong id="s-donut-a">—</strong></div>
+              <div class="legend-item"><div class="legend-dot" style="background:#58a6ff"></div>Μέρος Β: <strong id="s-donut-b">—</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Line chart -->
+        <div class="chart-inner">
+          <div class="chart-label">📈 Εξέλιξη Μ.Ο.</div>
+          <canvas id="s-line-canvas" class="line-canvas" width="600" height="130"></canvas>
+        </div>
+
+        <!-- Calendar -->
+        <div class="chart-inner">
+          <div class="chart-label">📅 Δραστηριότητα — 6 Μήνες</div>
+          <div class="cal-outer">
+            <div class="cal-months" id="s-cal-months"></div>
+            <div class="cal-grid" id="s-cal-grid"></div>
+          </div>
+          <div class="cal-legend">
+            <span>Λιγότερο</span>
+            <div class="cal-legend-cell" style="background:#1a1d2a;"></div>
+            <div class="cal-legend-cell" style="background:rgba(88,166,255,0.4);"></div>
+            <div class="cal-legend-cell" style="background:#58a6ff;"></div>
+            <span>Περισσότερο</span>
+          </div>
+        </div>
+
+        <!-- History -->
+        <div>
+          <div class="section-label">📋 Ιστορικό</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Ημερομηνία</th><th>Μέρος Α</th><th>Μέρος Β</th><th>Μ.Ο.</th><th>Αποτ.</th></tr></thead>
+              <tbody id="s-history-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Action button -->
+        <a href="simulation.html" class="mode-link mode-link--sim">🎯 Έναρξη Εξέτασης →</a>
       </div>
-    </div>
+
+    </div><!-- /dashboard-grid -->
 
     <!-- Info -->
     <div class="info-card">
       <div class="section-title">ℹ️ Πληροφορίες Εξέτασης Ερωτήσεων Ε.Ο.Π.Π.Ε.Π.</div>
       <div class="info-grid">
         <div class="info-item"><div class="info-item-val">181</div><div class="info-item-lbl">Ερωτήσεις Τράπεζας</div></div>
-        <div class="info-item"><div class="info-item-val">80%</div><div class="info-item-lbl">Βαθμός Επιτυχίας</div></div>
-        <div class="info-item"><div class="info-item-val">ΙΑΑ</div><div class="info-item-lbl">Άδεια Εργασίας</div></div>
+        <div class="info-item"><div class="info-item-val">80%</div><div class="info-item-lbl">Βαθμός Quiz</div></div>
+        <div class="info-item"><div class="info-item-val">≥10</div><div class="info-item-lbl">Βαθμός Simulation</div></div>
       </div>
     </div>
 
