@@ -45,7 +45,7 @@
       if (user.email === ADMIN_EMAIL) {
         window.location.href = 'admin.html';
       } else {
-        window.location.href = 'quiz.html';
+        window.location.href = 'home.html';
       }
     } else {
       showPage();
@@ -139,7 +139,7 @@
         if(data.isAdmin || email === ADMIN_EMAIL){
           window.location.href = 'admin.html';
         } else {
-          window.location.href = 'quiz.html';
+          window.location.href = 'home.html';
         }
       }
     } catch(e){
