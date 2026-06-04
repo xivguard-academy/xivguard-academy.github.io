@@ -50,7 +50,7 @@
 
   // ── Load all data ─────────────────────────────────────────────────────────
   async function loadAll(){
-    await Promise.all([ loadUsers(), loadResults() ]);
+    await Promise.all([ loadUsers(), loadResults(), loadSimResults() ]);
   }
 
   // ── Load users ────────────────────────────────────────────────────────────
@@ -142,6 +142,40 @@
         <td>${formatDate(r.completedAt)}</td>
       </tr>`;
     }).join('');
+  }
+
+
+  // ── Load simulation results ───────────────────────────────────────────────
+  async function loadSimResults(){
+    try {
+      const q    = query(collection(db, 'simulationResults'), orderBy('completedAt', 'desc'));
+      const snap = await getDocs(q);
+      const results = [];
+      snap.forEach(d => results.push({ id: d.id, ...d.data() }));
+
+      document.getElementById('badge-simresults').textContent = results.length || '';
+
+      const tbody = document.getElementById('simresults-tbody');
+      if(results.length === 0){
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
+        return;
+      }
+      tbody.innerHTML = results.map(r => {
+        const avg   = r.average ?? ((r.partAScore + r.partBScore) / 2);
+        const color = avg >= 10 ? 'var(--green)' : 'var(--red)';
+        const badge = r.passed
+          ? '<span style="color:var(--green);font-weight:700;">✓ ΕΠΙΤΥΧΙΑ</span>'
+          : '<span style="color:var(--red);font-weight:700;">✗ ΑΠΟΤΥΧΙΑ</span>';
+        return `<tr>
+          <td>${r.email || r.uid || '—'}</td>
+          <td>${r.partAScore ?? '—'}/20</td>
+          <td>${r.partBScore ?? '—'}/20</td>
+          <td style="color:${color};font-weight:700;">${avg.toFixed(1)}</td>
+          <td>${badge}</td>
+          <td>${formatDate(r.completedAt)}</td>
+        </tr>`;
+      }).join('');
+    } catch(e){ console.error('SimResults error:',e); }
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -315,6 +349,9 @@ tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
       <button class="tab-btn" id="tab-results" onclick="switchTab('results')">
         Αποτελέσματα Quiz <span class="badge" id="badge-results"></span>
       </button>
+      <button class="tab-btn" id="tab-simresults" onclick="switchTab('simresults')">
+        Simulation <span class="badge" id="badge-simresults"></span>
+      </button>
     </div>
 
     <!-- Panel: Pending -->
@@ -377,6 +414,23 @@ tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
         <table>
           <thead><tr><th>Email</th><th>Ποσοστό</th><th>Σωστές</th><th>Λάθος</th><th>Ημερομηνία</th></tr></thead>
           <tbody id="results-tbody"><tr><td colspan="5" class="empty-msg">Φόρτωση...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <!-- Panel: Simulation Results -->
+    <div id="panel-simresults" class="tab-panel" style="display:none;">
+      <div class="section-hdr">
+        <div>
+          <div class="section-title">Αποτελέσματα Τεστ Προσομοίωσης</div>
+          <div class="section-sub">Όλες οι ολοκληρωμένες εξετάσεις — πιο πρόσφατες πρώτα</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Email</th><th>Μέρος Α</th><th>Μέρος Β</th><th>Μ.Ο.</th><th>Αποτέλεσμα</th><th>Ημερομηνία</th></tr></thead>
+          <tbody id="simresults-tbody"><tr><td colspan="6" class="empty-msg">Φόρτωση...</td></tr></tbody>
         </table>
       </div>
     </div>

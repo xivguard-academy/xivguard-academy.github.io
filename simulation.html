@@ -248,10 +248,12 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 
 let userId = null;
+let userEmail = null;
 
 onAuthStateChanged(auth, user => {
   if (!user) { window.location.href = 'index.html'; return; }
   userId = user.uid;
+  userEmail = user.email;
   document.getElementById('loading-gate').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   render();
@@ -447,7 +449,7 @@ async function showResults(){
     savedResult=true;
     try{
       await addDoc(collection(db,'simulationResults'),{
-        uid:userId, completedAt:serverTimestamp(),
+        uid:userId, email:userEmail, completedAt:serverTimestamp(),
         partAScore, partBScore:partB,
         partBQ1Score:partBScores[0], partBQ2Score:partBScores[1],
         average:Math.round(avg*10)/10, passed,
