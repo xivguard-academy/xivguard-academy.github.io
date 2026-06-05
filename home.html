@@ -886,11 +886,18 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
 <script>
 // ── Cinematic Intro — scan-reveal sync ───────────────────────────────────────
 (function(){
+  const screen = document.getElementById('intro-screen');
+
+  // ── Παράλειψη intro αν έχει ήδη εμφανιστεί σε αυτή τη session ──
+  if(sessionStorage.getItem('introSeen') === 'true'){
+    screen.style.display = 'none';
+    return;
+  }
+
   const SCAN_DURATION = 7400; // ms — ends exactly when intro fades out
   const SCAN_START    = 600;  // ms delay before scan begins
   const TOTAL         = 10000; // total intro duration ms
 
-  const screen   = document.getElementById('intro-screen');
   const logo     = document.getElementById('intro-logo');
   const divider  = document.getElementById('intro-divider');
   const tagline  = document.getElementById('intro-tagline');
@@ -939,8 +946,9 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
     requestAnimationFrame(scanFrame);
   }, SCAN_START);
 
-  // ── Fade out and hide intro after TOTAL ms ──
+  // ── Fade out, hide intro, και σημείωσε ως εμφανισμένο ──
   setTimeout(()=>{
+    sessionStorage.setItem('introSeen', 'true');
     screen.style.transition = 'opacity 1s ease';
     screen.style.opacity = '0';
     setTimeout(()=>{ screen.style.display = 'none'; }, 1000);
