@@ -1029,9 +1029,9 @@ function jumpToIdx(idx){
   document.getElementById('jump-msg') && (document.getElementById('jump-msg').textContent='');
 }
 
-function goHome(){
-  if(confirm('Επιστροφή στην αρχική; Η πρόοδός σου θα χαθεί.'))
-    restart();
+async function goHome(){
+  await saveProgress();
+  window.location.href = 'home.html';
 }
 
 function splashJump(){
