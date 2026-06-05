@@ -56,7 +56,7 @@
         const pct = Math.round((p.current / p.total) * 100);
         document.getElementById('progress-card').style.display='block';
         document.getElementById('prog-q').textContent     = `Ερώτηση ${p.current+1} από ${p.total}`;
-        document.getElementById('prog-score').textContent = `✅ ${p.score}  ❌ ${p.wrong}`;
+        document.getElementById('prog-score').innerHTML = `<span style="color:#3fb950;font-weight:700;">✓ ${p.score}</span>&nbsp;&nbsp;<span style="color:#f85149;font-weight:700;">✗ ${p.wrong}</span>`;
         document.getElementById('prog-bar').style.width   = pct+'%';
         document.getElementById('prog-pct').textContent   = pct+'%';
       }
@@ -348,10 +348,9 @@
     });
     const today  = new Date();
     const WEEKS  = 24;
+    const dayOfWeek = (today.getDay()+6)%7;
     const start  = new Date(today);
-    start.setDate(today.getDate() - WEEKS*7 + 1);
-    const dayOfWeek = (start.getDay()+6)%7;
-    start.setDate(start.getDate() - dayOfWeek);
+    start.setDate(today.getDate() - dayOfWeek - (WEEKS-1)*7);
     const grid   = document.getElementById(gridId);
     const months = document.getElementById(monthsId);
     grid.innerHTML = ''; months.innerHTML = '';
