@@ -80,7 +80,7 @@
         document.getElementById('q-donut-b').textContent = '—';
         drawQuizDonut(0, 0, 1);
         drawQuizLine([], []);
-        drawQuizCal([]);
+        drawQuizBar([]);
         document.getElementById('q-history-tbody').innerHTML =
           '<tr><td colspan="4" style="text-align:center;color:#636880;padding:1.5rem;">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
         return;
@@ -100,7 +100,7 @@
 
       drawQuizDonut(lRes.score, lRes.wrong ?? (lRes.total - lRes.score), lRes.total);
       drawQuizLine([...pcts].reverse(), [...results].reverse());
-      drawQuizCal(results);
+      drawQuizBar(results);
 
       const tbody = document.getElementById('q-history-tbody');
       tbody.innerHTML = results.slice(0,5).map((r,i) => {
@@ -136,7 +136,7 @@
         document.getElementById('s-donut-b').textContent = '—';
         drawSimDonut(0, 0);
         drawSimLine([], []);
-        drawSimCal([]);
+        drawSimBar([]);
         document.getElementById('s-history-tbody').innerHTML =
           '<tr><td colspan="5" style="text-align:center;color:#636880;padding:1.5rem;">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
         return;
@@ -156,7 +156,7 @@
 
       drawSimDonut(lRes.partAScore, lRes.partBScore);
       drawSimLine([...avgs].reverse(), [...results].reverse());
-      drawSimCal(results);
+      drawSimBar(results);
 
       const tbody = document.getElementById('s-history-tbody');
       tbody.innerHTML = results.slice(0,5).map((r,i) => {
@@ -338,44 +338,29 @@
   }
 
   // ── Shared Calendar Logic ─────────────────────────────────────────────────────
-  function drawCal(results, gridId, monthsId){
-    const dateMap = {};
-    results.forEach(r => {
+  function drawBarChart(results, wrapperId, colorClass){
+    const monthNames=['Ιαν','Φεβ','Μαρ','Απρ','Μαΐ','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
+    const now=new Date();
+    const counts=Array(6).fill(0);
+    results.forEach(r=>{
       if(!r.completedAt) return;
-      const d   = r.completedAt.toDate();
-      const key = d.toISOString().slice(0,10);
-      dateMap[key] = (dateMap[key]||0) + 1;
+      const d=r.completedAt.toDate();
+      const diff=(now.getFullYear()-d.getFullYear())*12+(now.getMonth()-d.getMonth());
+      if(diff>=0&&diff<6) counts[5-diff]++;
     });
-    const today  = new Date();
-    const WEEKS  = 24;
-    const dayOfWeek = (today.getDay()+6)%7;
-    const start  = new Date(today);
-    start.setDate(today.getDate() - dayOfWeek - (WEEKS-1)*7);
-    const grid   = document.getElementById(gridId);
-    const months = document.getElementById(monthsId);
-    grid.innerHTML = ''; months.innerHTML = '';
-    let lastMonth = -1;
-    const monthNames = ['Ιαν','Φεβ','Μαρ','Απρ','Μαΐ','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
-    for(let w=0; w<WEEKS; w++){
-      const col = document.createElement('div'); col.className='cal-col';
-      for(let d=0; d<7; d++){
-        const date = new Date(start); date.setDate(start.getDate()+w*7+d);
-        const key   = date.toISOString().slice(0,10);
-        const count = dateMap[key]||0;
-        const isFut = date > today;
-        const cell  = document.createElement('div'); cell.className='cal-cell';
-        if(!isFut){ if(count===0) cell.classList.add('cal-empty'); else if(count===1) cell.classList.add('cal-low'); else cell.classList.add('cal-high'); }
-        else cell.classList.add('cal-future');
-        cell.title = key+(count>0?` (${count} προσπάθεια)`:'');
-        col.appendChild(cell);
-        if(d===0){ const m=date.getMonth(); if(m!==lastMonth&&date<=today){ const lbl=document.createElement('div'); lbl.className='cal-month-lbl'; lbl.textContent=monthNames[m]; lbl.style.gridColumn=(w+1)+''; months.appendChild(lbl); lastMonth=m; } }
-      }
-      grid.appendChild(col);
-    }
+    const max=Math.max(...counts,1);
+    const wrap=document.getElementById(wrapperId);
+    wrap.innerHTML='';
+    counts.forEach((count,i)=>{
+      const monthIdx=new Date(now.getFullYear(),now.getMonth()-5+i,1).getMonth();
+      const heightPct=Math.round((count/max)*100);
+      const col=document.createElement('div'); col.className='bar-col';
+      col.innerHTML=`<div class="bar-count">${count>0?count:''}</div><div class="bar-bg"><div class="bar-fill bar-fill-${colorClass}" style="height:${heightPct}%"></div></div><div class="bar-lbl">${monthNames[monthIdx]}</div>`;
+      wrap.appendChild(col);
+    });
   }
-
-  function drawQuizCal(results){ drawCal(results,'q-cal-grid','q-cal-months'); }
-  function drawSimCal(results) { drawCal(results,'s-cal-grid','s-cal-months'); }
+  function drawQuizBar(results){ drawBarChart(results,'q-bar-wrap','gold'); }
+  function drawSimBar(results)  { drawBarChart(results,'s-bar-wrap','blue'); }
 
   window.discardProgress = async () => {
     if(!confirm('Να διαγραφεί η αποθηκευμένη πρόοδος;')) return;
@@ -466,20 +451,15 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 .chart-label{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.75rem;}
 canvas.line-canvas{display:block;width:100%;height:130px;}
 
-/* Calendar inside panel */
-.cal-outer{overflow-x:auto;padding-bottom:0.5rem;}
-.cal-months{display:flex;gap:0;margin-bottom:4px;min-width:max-content;}
-.cal-month-lbl{font-size:0.6rem;color:var(--text3);width:calc(11px + 3px);text-align:left;}
-.cal-grid{display:flex;gap:2px;min-width:max-content;}
-.cal-col{display:flex;flex-direction:column;gap:2px;}
-.cal-cell{width:11px;height:11px;border-radius:2px;}
-.cal-empty{background:#1a1d2a;}
-.cal-low{background:rgba(239,159,39,0.45);}
-.cal-high{background:#EF9F27;}
-.cal-future{background:#13151f;opacity:0.3;}
-.cal-legend{display:flex;align-items:center;gap:4px;margin-top:6px;justify-content:flex-end;}
-.cal-legend span{font-size:0.6rem;color:var(--text3);}
-.cal-legend-cell{width:10px;height:10px;border-radius:2px;}
+/* Activity bar chart */
+.bar-chart-wrap{display:flex;align-items:flex-end;gap:6px;height:110px;}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;}
+.bar-bg{width:100%;background:#1e2030;border-radius:4px;display:flex;align-items:flex-end;height:80px;overflow:hidden;}
+.bar-fill{width:100%;border-radius:4px;}
+.bar-fill-gold{background:#EF9F27;}
+.bar-fill-blue{background:#58a6ff;}
+.bar-lbl{font-size:0.6rem;color:var(--text3);white-space:nowrap;}
+.bar-count{font-size:0.6rem;font-weight:700;color:var(--text2);min-height:14px;}
 
 /* History table inside panel */
 .section-label{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:0.5rem;}
@@ -503,10 +483,6 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
 .info-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.875rem;text-align:center;}
 .info-item-val{font-size:1.2rem;font-weight:800;color:var(--text);margin-bottom:0.2rem;}
 .info-item-lbl{font-size:0.65rem;color:var(--text3);}
-
-/* Sim calendar: blue high color */
-.s-panel .cal-high{background:var(--blue);}
-.s-panel .cal-low{background:rgba(88,166,255,0.4);}
 
 @media(max-width:900px){
   .dashboard-grid{grid-template-columns:1fr;}
@@ -753,20 +729,10 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
           <canvas id="q-line-canvas" class="line-canvas" width="600" height="130"></canvas>
         </div>
 
-        <!-- Calendar -->
+        <!-- Activity bar chart -->
         <div class="chart-inner">
           <div class="chart-label">📅 Δραστηριότητα — 6 Μήνες</div>
-          <div class="cal-outer">
-            <div class="cal-months" id="q-cal-months"></div>
-            <div class="cal-grid" id="q-cal-grid"></div>
-          </div>
-          <div class="cal-legend">
-            <span>Λιγότερο</span>
-            <div class="cal-legend-cell" style="background:#1a1d2a;"></div>
-            <div class="cal-legend-cell" style="background:rgba(239,159,39,0.45);"></div>
-            <div class="cal-legend-cell" style="background:#EF9F27;"></div>
-            <span>Περισσότερο</span>
-          </div>
+          <div class="bar-chart-wrap" id="q-bar-wrap"></div>
         </div>
 
         <!-- History -->
@@ -836,20 +802,10 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
           <canvas id="s-line-canvas" class="line-canvas" width="600" height="130"></canvas>
         </div>
 
-        <!-- Calendar -->
+        <!-- Activity bar chart -->
         <div class="chart-inner">
           <div class="chart-label">📅 Δραστηριότητα — 6 Μήνες</div>
-          <div class="cal-outer">
-            <div class="cal-months" id="s-cal-months"></div>
-            <div class="cal-grid" id="s-cal-grid"></div>
-          </div>
-          <div class="cal-legend">
-            <span>Λιγότερο</span>
-            <div class="cal-legend-cell" style="background:#1a1d2a;"></div>
-            <div class="cal-legend-cell" style="background:rgba(88,166,255,0.4);"></div>
-            <div class="cal-legend-cell" style="background:#58a6ff;"></div>
-            <span>Περισσότερο</span>
-          </div>
+          <div class="bar-chart-wrap" id="s-bar-wrap"></div>
         </div>
 
         <!-- History -->
