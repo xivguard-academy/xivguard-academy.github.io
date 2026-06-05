@@ -63,8 +63,8 @@
       if(progSnap.exists()){
         const p = progSnap.data();
         // Εμφάνιση dialog συνέχειας
-        document.getElementById('resume-info').textContent =
-          `Ερώτηση ${p.current + 1} από ${p.total} — Σωστές: ${p.score} | Λάθος: ${p.wrong}`;
+        document.getElementById('resume-info').innerHTML =
+          `Ερώτηση ${p.current + 1} από ${p.total} &nbsp;<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polyline points="20 6 9 17 4 12"/></svg> <strong style="color:#3fb950;">${p.score}</strong> &nbsp;<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f85149" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> <strong style="color:#f85149;">${p.wrong}</strong>`;
         document.getElementById('resume-modal').style.display = 'flex';
         // Αποθήκευση progress data για χρήση αν επιλέξει Συνέχεια
         window._savedProgress = p;

@@ -201,10 +201,10 @@
     ctx.strokeStyle='#3fb950'; ctx.lineWidth=lw; ctx.stroke();
     const p = Math.round(pct*100);
     ctx.fillStyle = p>=80?'#3fb950':p>=60?'#EF9F27':'#f85149';
-    ctx.font='bold 28px Plus Jakarta Sans'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(p+'%', cx, cy-10);
-    ctx.fillStyle='#636880'; ctx.font='10px Plus Jakarta Sans';
-    ctx.fillText('τελευταία', cx, cy+14);
+    ctx.font='bold 16px Plus Jakarta Sans'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(p+'%', cx, cy-8);
+    ctx.fillStyle='#636880'; ctx.font='9px Plus Jakarta Sans';
+    ctx.fillText('τελευταία', cx, cy+9);
     document.getElementById('q-donut-a').textContent = score;
     document.getElementById('q-donut-b').textContent = wrong;
   }
@@ -240,11 +240,11 @@
     }
     const avg = ((partA+partB)/2).toFixed(1);
     const color = parseFloat(avg)>=10?'#3fb950':'#f85149';
-    ctx.fillStyle=color; ctx.font='bold 26px Plus Jakarta Sans';
+    ctx.fillStyle=color; ctx.font='bold 16px Plus Jakarta Sans';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(avg, cx, cy-10);
-    ctx.fillStyle='#636880'; ctx.font='10px Plus Jakarta Sans';
-    ctx.fillText('μ.ο. /20', cx, cy+14);
+    ctx.fillText(avg, cx, cy-8);
+    ctx.fillStyle='#636880'; ctx.font='9px Plus Jakarta Sans';
+    ctx.fillText('μ.ο. /20', cx, cy+9);
     document.getElementById('s-donut-a').textContent = partA+'/20';
     document.getElementById('s-donut-b').textContent = partB+'/20';
   }
