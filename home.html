@@ -516,9 +516,151 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
   .header-right .user-chip{display:none;}
   .info-grid{grid-template-columns:repeat(2,1fr);}
 }
+
+/* ─── Cinematic Intro ─────────────────────────────────────────────────────── */
+#intro-screen{
+  position:fixed;inset:0;z-index:9999;background:#000;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+#intro-screen::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(239,159,39,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(239,159,39,0.04) 1px, transparent 1px);
+  background-size:60px 60px;
+  animation:gridPulse 8s ease-in-out infinite;
+}
+#intro-screen::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 70% at 50% 50%, transparent 20%, #000 100%);
+  pointer-events:none;
+}
+@keyframes gridPulse{
+  0%,100%{opacity:0.6;}
+  50%{opacity:1;}
+}
+.intro-scanline{
+  position:absolute;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent 0%,rgba(239,159,39,0.5) 30%,rgba(239,159,39,0.8) 50%,rgba(239,159,39,0.5) 70%,transparent 100%);
+  z-index:1;
+}
+.intro-corner{position:absolute;width:40px;height:40px;z-index:2;}
+.intro-corner.tl{top:2rem;left:2rem;border-top:1px solid rgba(239,159,39,0.5);border-left:1px solid rgba(239,159,39,0.5);}
+.intro-corner.tr{top:2rem;right:2rem;border-top:1px solid rgba(239,159,39,0.5);border-right:1px solid rgba(239,159,39,0.5);}
+.intro-corner.bl{bottom:2rem;left:2rem;border-bottom:1px solid rgba(239,159,39,0.5);border-left:1px solid rgba(239,159,39,0.5);}
+.intro-corner.br{bottom:2rem;right:2rem;border-bottom:1px solid rgba(239,159,39,0.5);border-right:1px solid rgba(239,159,39,0.5);}
+.intro-content{
+  position:relative;z-index:3;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:100%;height:100%;
+}
+.intro-logo-wrap{
+  opacity:0;transform:scale(0.75);
+  transition:opacity 1.2s ease, transform 1.2s cubic-bezier(0.22,1,0.36,1);
+}
+.intro-logo-wrap.show{opacity:1;transform:scale(1);}
+.intro-divider{
+  width:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(239,159,39,0.7),transparent);
+  margin:2rem 0 1.8rem;
+  transition:width 1.0s ease;
+}
+.intro-divider.show{width:280px;}
+.intro-tagline{
+  font-family:'Lora',Georgia,serif;
+  font-size:clamp(1.2rem,2.5vw,1.8rem);
+  font-weight:600;
+  letter-spacing:0.25em;
+  color:#EF9F27;
+  opacity:0;
+  transform:translateY(16px);
+  transition:opacity 1.1s ease, transform 1.1s cubic-bezier(0.22,1,0.36,1);
+}
+.intro-tagline.show{opacity:1;transform:translateY(0);}
+.intro-academy{
+  font-family:'Plus Jakarta Sans',Inter,sans-serif;
+  font-size:clamp(0.75rem,1.38vw,0.98rem);
+  font-weight:700;
+  letter-spacing:0.45em;
+  color:#ffffff;
+  margin-top:0.6rem;
+  opacity:0;
+  transition:opacity 1.0s ease;
+}
+.intro-academy.show{opacity:1;}
+.intro-byline{
+  font-family:'Plus Jakarta Sans',Inter,sans-serif;
+  font-size:clamp(0.65rem,1.1vw,0.85rem);
+  font-weight:500;
+  letter-spacing:0.12em;
+  color:rgba(255,255,255,0.55);
+  margin-top:1.2rem;
+  line-height:1.7;
+  text-align:center;
+  opacity:0;
+  transition:opacity 1.2s ease;
+}
+.intro-byline span{
+  display:block;
+  font-size:clamp(0.8rem,1.3vw,1rem);
+  font-weight:700;
+  color:rgba(239,159,39,0.85);
+  letter-spacing:0.18em;
+  margin-top:0.15rem;
+}
+.intro-byline.show{opacity:1;}
 </style>
 </head>
 <body>
+
+<!-- CINEMATIC INTRO -->
+<div id="intro-screen">
+  <div class="intro-scanline"></div>
+  <div class="intro-corner tl"></div>
+  <div class="intro-corner tr"></div>
+  <div class="intro-corner bl"></div>
+  <div class="intro-corner br"></div>
+  <div class="intro-content">
+    <div class="intro-logo-wrap" id="intro-logo">
+      <svg width="min(600px, 80vw)" height="min(282px, 37.6vw)" viewBox="190 20 300 280" xmlns="http://www.w3.org/2000/svg">
+        <rect x="190" y="20" width="300" height="280" rx="10" fill="#000"/>
+        <ellipse cx="340" cy="148" rx="145" ry="135" fill="url(#ig)"/>
+        <defs>
+          <radialGradient id="ig" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#1e1b6e" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <g transform="translate(340,128)">
+          <polygon points="0,-74 64,-37 64,37 0,74 -64,37 -64,-37" fill="#070d28" stroke="#EF9F27" stroke-width="2"/>
+          <circle cx="0" cy="-31" r="6.5" fill="#EF9F27"/>
+          <circle cx="-27" cy="6" r="6.5" fill="#EF9F27"/>
+          <circle cx="27" cy="6" r="6.5" fill="#EF9F27"/>
+          <circle cx="0" cy="29" r="6.5" fill="#FAC775"/>
+          <line x1="0" y1="-24.5" x2="-22" y2="4.5" stroke="#EF9F27" stroke-width="1.8" opacity="0.85"/>
+          <line x1="0" y1="-24.5" x2="22" y2="4.5" stroke="#EF9F27" stroke-width="1.8" opacity="0.85"/>
+          <line x1="-22" y1="4.5" x2="22" y2="4.5" stroke="#EF9F27" stroke-width="1.8" opacity="0.85"/>
+          <line x1="-22" y1="4.5" x2="0" y2="26" stroke="#FAC775" stroke-width="1.8" opacity="0.85"/>
+          <line x1="22" y1="4.5" x2="0" y2="26" stroke="#FAC775" stroke-width="1.8" opacity="0.85"/>
+          <circle cx="0" cy="-31" r="3.2" fill="#FAEEDA"/>
+          <circle cx="-27" cy="6" r="3.2" fill="#FAEEDA"/>
+          <circle cx="27" cy="6" r="3.2" fill="#FAEEDA"/>
+          <circle cx="0" cy="29" r="3.2" fill="#FAEEDA"/>
+        </g>
+        <text x="340" y="240" text-anchor="middle" font-size="28" letter-spacing="6">
+          <tspan font-family="Cinzel,Georgia,serif" font-weight="700" fill="#FFFFFF">XIV </tspan>
+          <tspan font-family="Inter,sans-serif" font-weight="700" fill="#EF9F27">GUARD</tspan>
+        </text>
+        <text x="340" y="266" text-anchor="middle" font-family="Inter,sans-serif" font-size="10.5" font-weight="400" letter-spacing="7.5" fill="#8890B5">ACADEMY</text>
+      </svg>
+    </div>
+    <div class="intro-divider" id="intro-divider"></div>
+    <div class="intro-tagline" id="intro-tagline">The Fourteenth Guard</div>
+    <div class="intro-academy" id="intro-academy">ACADEMY</div>
+    <div class="intro-byline" id="intro-byline">Designed &amp; Developed by<span>STYLIANOS BAMPAITIS</span></div>
+  </div>
+</div>
 
 <div id="loading-gate"><div class="spinner"></div></div>
 
@@ -740,6 +882,71 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
 
   </main>
 </div>
+
+<script>
+// ── Cinematic Intro — scan-reveal sync ───────────────────────────────────────
+(function(){
+  const SCAN_DURATION = 7400; // ms — ends exactly when intro fades out
+  const SCAN_START    = 600;  // ms delay before scan begins
+  const TOTAL         = 10000; // total intro duration ms
+
+  const screen   = document.getElementById('intro-screen');
+  const logo     = document.getElementById('intro-logo');
+  const divider  = document.getElementById('intro-divider');
+  const tagline  = document.getElementById('intro-tagline');
+  const academy  = document.getElementById('intro-academy');
+  const byline   = document.getElementById('intro-byline');
+  const scanEl   = document.querySelector('.intro-scanline');
+
+  // ── Replace CSS scan animation with JS-controlled position ──
+  scanEl.style.animation = 'none';
+  scanEl.style.top = '-2px';
+  scanEl.style.opacity = '0';
+
+  let startTime = null;
+
+  function scanFrame(ts){
+    if(!startTime) startTime = ts;
+    const elapsed = ts - startTime;
+    const progress = Math.min(elapsed / SCAN_DURATION, 1);
+    const px = progress * window.innerHeight;
+    scanEl.style.top = px + 'px';
+    scanEl.style.opacity = progress < 0.02 || progress > 0.98 ? '0' : '1';
+
+    checkReveal(logo,    px, 'logo');
+    checkReveal(divider, px, 'divider');
+    checkReveal(tagline, px, 'tagline');
+    checkReveal(academy, px, 'academy');
+    checkReveal(byline,  px, 'byline');
+
+    if(progress < 1) requestAnimationFrame(scanFrame);
+    else scanEl.style.opacity = '0';
+  }
+
+  const revealed = {};
+  function checkReveal(el, scanY, key){
+    if(revealed[key]) return;
+    const rect = el.getBoundingClientRect();
+    const center = rect.top + rect.height / 2;
+    if(scanY >= center - 4){
+      revealed[key] = true;
+      el.classList.add('show');
+    }
+  }
+
+  // ── Start scan after delay ──
+  setTimeout(()=>{
+    requestAnimationFrame(scanFrame);
+  }, SCAN_START);
+
+  // ── Fade out and hide intro after TOTAL ms ──
+  setTimeout(()=>{
+    screen.style.transition = 'opacity 1s ease';
+    screen.style.opacity = '0';
+    setTimeout(()=>{ screen.style.display = 'none'; }, 1000);
+  }, TOTAL);
+})();
+</script>
 
 </body>
 </html>
