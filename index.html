@@ -12,7 +12,7 @@
      ═══════════════════════════════════════════════ -->
 <script type="module">
   import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged }
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail }
                                     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc, serverTimestamp }
                                     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -161,12 +161,53 @@
     return map[code] || 'Σφάλμα: ' + code;
   }
 
+  // ── Reset Password ────────────────────────────────────────────────────────
+  window.doResetPassword = async () => {
+    const email = document.getElementById('reset-email').value.trim();
+    const errEl = document.getElementById('reset-error');
+    errEl.textContent = '';
+    if(!email){ errEl.textContent = 'Εισήγαγε το email σου.'; return; }
+    const btn = document.getElementById('reset-btn');
+    btn.disabled = true; btn.textContent = 'Αποστολή...';
+    try {
+      await sendPasswordResetEmail(auth, email);
+      document.getElementById('reset-form-area').style.display = 'none';
+      document.getElementById('reset-success').style.display   = 'block';
+    } catch(e){
+      btn.disabled = false; btn.textContent = 'Αποστολή email →';
+      errEl.textContent = translateError(e.code);
+    }
+  };
+
+  window.showResetPanel = () => {
+    document.getElementById('panel-login').style.display    = 'none';
+    document.getElementById('panel-register').style.display = 'none';
+    document.getElementById('panel-reset').style.display    = 'block';
+    document.getElementById('tab-login').classList.remove('active');
+    document.getElementById('tab-reg').classList.remove('active');
+    // Προ-συμπλήρωση email αν έχει ήδη πληκτρολογηθεί
+    const loginEmail = document.getElementById('login-email').value.trim();
+    if(loginEmail) document.getElementById('reset-email').value = loginEmail;
+    // Reset state
+    document.getElementById('reset-form-area').style.display = 'block';
+    document.getElementById('reset-success').style.display   = 'none';
+    document.getElementById('reset-error').textContent       = '';
+    const btn = document.getElementById('reset-btn');
+    btn.disabled = false; btn.textContent = 'Αποστολή email →';
+  };
+
+  window.showLoginPanel = () => {
+    document.getElementById('panel-reset').style.display = 'none';
+    switchTab('login');
+  };
+
   // ── Tab switching ─────────────────────────────────────────────────────────
   window.switchTab = (tab) => {
     document.getElementById('tab-login').classList.toggle('active', tab==='login');
     document.getElementById('tab-reg').classList.toggle('active', tab==='register');
     document.getElementById('panel-login').style.display    = tab==='login'    ? 'block' : 'none';
     document.getElementById('panel-register').style.display = tab==='register' ? 'block' : 'none';
+    document.getElementById('panel-reset').style.display    = 'none';
     document.getElementById('status-msg').style.display     = 'none';
   };
 
@@ -174,8 +215,9 @@
   window.addEventListener('keydown', e => {
     if(e.key !== 'Enter') return;
     const loginPanel = document.getElementById('panel-login');
-    const regPanel   = document.getElementById('panel-register');
+    const resetPanel = document.getElementById('panel-reset');
     if(loginPanel.style.display !== 'none') doLogin();
+    else if(resetPanel.style.display !== 'none') doResetPassword();
     else doRegister();
   });
 </script>
@@ -270,6 +312,18 @@ body{
 .divider{height:1px;background:var(--border);margin:1.25rem 0;}
 .hint{font-size:0.72rem;color:var(--text3);text-align:center;line-height:1.7;}
 
+/* Forgot password link */
+.forgot-link{text-align:right;margin-top:-0.5rem;margin-bottom:1rem;}
+.forgot-link a{font-size:0.75rem;color:var(--gold);text-decoration:none;font-weight:500;opacity:0.8;transition:opacity 0.15s;}
+.forgot-link a:hover{opacity:1;}
+
+/* Reset success message */
+#reset-success{display:none;background:rgba(63,185,80,0.08);border:1px solid rgba(63,185,80,0.3);border-radius:var(--radius-sm);padding:1rem;font-size:0.82rem;color:var(--green);font-weight:600;text-align:center;line-height:1.7;}
+
+/* Reset back button */
+.reset-back{display:block;width:100%;text-align:center;margin-top:1rem;font-size:0.78rem;color:var(--text3);cursor:pointer;background:none;border:none;font-family:inherit;transition:color 0.15s;}
+.reset-back:hover{color:var(--text2);}
+
 /* Footer */
 .footer{text-align:center;margin-top:1.5rem;font-size:0.65rem;color:var(--text3);letter-spacing:0.05em;}
 </style>
@@ -335,6 +389,7 @@ body{
         <label>Κωδικός</label>
         <input id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password"/>
       </div>
+      <div class="forgot-link"><a href="#" onclick="showResetPanel();return false;">Ξέχασες τον κωδικό σου;</a></div>
       <button class="submit-btn" id="login-btn" onclick="doLogin()">Σύνδεση →</button>
       <div class="error-msg" id="login-error"></div>
     </div>
@@ -362,6 +417,27 @@ body{
       </div>
       <div class="divider"></div>
       <div class="hint">Η πρόσβαση χορηγείται μόνο μετά από έγκριση<br>του διαχειριστή.</div>
+    </div>
+
+    <!-- Reset Password Panel -->
+    <div id="panel-reset" class="panel" style="display:none;">
+      <div id="reset-form-area">
+        <div style="text-align:center;margin-bottom:1.25rem;">
+          <div style="font-family:'Lora',Georgia,serif;font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:0.4rem;">Επαναφορά κωδικού</div>
+          <div style="font-size:0.78rem;color:var(--text3);line-height:1.6;">Εισήγαγε το email σου και θα σου στείλουμε<br>σύνδεσμο επαναφοράς.</div>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input id="reset-email" type="email" placeholder="example@email.com" autocomplete="email"/>
+        </div>
+        <button class="submit-btn" id="reset-btn" onclick="doResetPassword()">Αποστολή email →</button>
+        <div class="error-msg" id="reset-error"></div>
+      </div>
+      <div id="reset-success">
+        ✅ Αν το email υπάρχει στο σύστημα,<br>θα λάβεις σύνδεσμο επαναφοράς κωδικού.<br>
+        <span style="font-size:0.72rem;opacity:0.7;">Έλεγξε και τα spam / junk.</span>
+      </div>
+      <button class="reset-back" onclick="showLoginPanel()">← Επιστροφή στη σύνδεση</button>
     </div>
   </div>
 
