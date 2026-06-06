@@ -171,6 +171,17 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 .res-actions{display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;}
 .btn-again{padding:0.75rem 2rem;background:var(--gold);color:#0b0d14;border:none;border-radius:10px;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;}
 .btn-again:hover{background:var(--gold2);}
+.wrong-section{margin-top:1rem;border:1px solid var(--border2);border-radius:10px;overflow:hidden;}
+.wrong-toggle{width:100%;background:#1a1d2e;border:none;color:var(--gold);font-family:inherit;font-size:0.8rem;font-weight:700;letter-spacing:0.05em;padding:0.75rem 1rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;}
+.wrong-toggle:hover{background:#1e2135;}
+.wrong-list{padding:0.75rem;}
+.wrong-item{padding:0.75rem 0;border-bottom:1px solid var(--border2);}
+.wrong-item:last-child{border-bottom:none;}
+.wrong-q{font-size:0.78rem;color:var(--text2);margin-bottom:0.4rem;line-height:1.45;}
+.wrong-q-num{font-size:0.68rem;color:var(--text3);margin-bottom:0.25rem;}
+.wrong-ans{font-size:0.76rem;padding:0.25rem 0.5rem;border-radius:5px;margin-top:0.2rem;}
+.wrong-ans.bad{color:var(--red);background:rgba(248,81,73,0.08);}
+.wrong-ans.good{color:var(--green);background:rgba(63,185,80,0.08);}
 .btn-home-res{padding:0.75rem 2rem;background:transparent;border:1.5px solid var(--border2);border-radius:10px;
   color:var(--text2);font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block;}
 .btn-home-res:hover{border-color:var(--gold);color:var(--gold);}
@@ -307,6 +318,7 @@ let practSubmitted = [false, false];
 let partAScore  = 0;
 let partBScores = [0, 0];
 let savedResult = false;
+let wrongAnswers = []; // {id, question, selected, correct}
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 function shuffle(arr){
@@ -331,9 +343,18 @@ function autoFinishPartA(){finishPartA(true);}
 
 function finishPartA(byTimer=false){
   clearInterval(timerInt);
-  partAScore=0;
+  partAScore=0; wrongAnswers=[];
   for(let i=0;i<20;i++){
-    if(answers[i]!==null && answers[i]===theorQueue[i].correct) partAScore++;
+    if(answers[i]!==null && answers[i]===theorQueue[i].correct){
+      partAScore++;
+    } else {
+      wrongAnswers.push({
+        id: theorQueue[i].id,
+        question: theorQueue[i].question,
+        selected: answers[i]!==null ? theorQueue[i].options[answers[i]] : null,
+        correct: theorQueue[i].options[theorQueue[i].correct]
+      });
+    }
   }
   phase='partB';
   curIdx=0;
@@ -425,6 +446,14 @@ window.goHome=function(){
     if(!confirm('Αποχώρηση από το τεστ; Η πρόοδός σου θα χαθεί.'))return;
   }
   window.location.href='home.html';
+};
+
+window.toggleWrongList=function(){
+  const list=document.getElementById('wrong-list');
+  const arrow=document.getElementById('wrong-arrow');
+  const open=list.style.display==='none';
+  list.style.display=open?'block':'none';
+  arrow.textContent=open?'▲':'▼';
 };
 
 window.restartTest=function(){
@@ -655,6 +684,23 @@ function renderResults(){
     <div class="res-note">${msg}<br>
       ${!passed?'<span style="color:var(--text3);font-size:0.75rem;">Για επιτυχία απαιτείται μέσος όρος ≥ 10/20</span>':''}
     </div>
+
+    ${wrongAnswers.length>0?`
+    <div class="wrong-section">
+      <button class="wrong-toggle" onclick="toggleWrongList()">
+        <span>Ανάλυση Λαθών Μέρους Α &nbsp;(${wrongAnswers.length} ${wrongAnswers.length===1?'λάθος':'λάθη'})</span>
+        <span id="wrong-arrow">▼</span>
+      </button>
+      <div class="wrong-list" id="wrong-list" style="display:none">
+        ${wrongAnswers.map((w,idx)=>`
+        <div class="wrong-item">
+          <div class="wrong-q-num">Ερώτηση ${w.id}</div>
+          <div class="wrong-q">${w.question}</div>
+          <div class="wrong-ans bad">✗ &nbsp;${w.selected??'Παραλείφθηκε'}</div>
+          <div class="wrong-ans good">✓ &nbsp;${w.correct}</div>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
 
     <div class="res-actions">
       <button class="btn-again" onclick="restartTest()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0b0d14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/></svg>Νέο Τεστ</button>
