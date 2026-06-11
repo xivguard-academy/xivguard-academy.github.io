@@ -11,7 +11,7 @@
   import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut }
                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc }
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp }
                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -49,6 +49,15 @@
     // Εμφάνιση email στο header
     const emailEl = document.getElementById('user-email-saek');
     if (emailEl) emailEl.textContent = user.email;
+
+    // Expose Firebase globals για progress
+    window._saekUser      = user;
+    window._saekDb        = db;
+    window._saekDoc       = doc;
+    window._saekGetDoc    = getDoc;
+    window._saekSetDoc    = setDoc;
+    window._saekDeleteDoc = deleteDoc;
+    window._saekTimestamp = serverTimestamp;
 
     // Εμφάνιση περιεχομένου
     document.getElementById('auth-gate-saek').style.display = 'none';
@@ -279,6 +288,18 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 
 <div id="app-root-saek" style="display:none;flex-direction:column;min-height:100vh;">
 
+<!-- Resume Modal -->
+<div id="saek-resume-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:2rem;max-width:380px;width:90%;display:flex;flex-direction:column;gap:1rem;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--gold);">⏸ Αποθηκευμένη Πρόοδος</div>
+    <div id="saek-resume-info" style="font-size:0.88rem;color:var(--text2);line-height:1.6;"></div>
+    <div style="display:flex;gap:0.75rem;margin-top:0.25rem;">
+      <button onclick="resumeSAEKProgress()" style="flex:1;padding:0.8rem;background:var(--gold);color:#0b0d14;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;">▶ Συνέχεια</button>
+      <button onclick="startSAEKFresh()" style="flex:1;padding:0.8rem;background:transparent;border:1.5px solid var(--border2);border-radius:8px;font-size:0.88rem;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text3);">✕ Νέο Quiz</button>
+    </div>
+  </div>
+</div>
+
 <!-- HEADER (hidden on home) -->
 <header class="header" id="main-header" style="display:none;">
   <div class="header-left">
@@ -419,7 +440,7 @@ let current=0, score=0, wrong=0, selected=null, revealed=false, phase='home';
 let answers=[], answeredSelections=[];
 let pendingAnswer=null, skipped=new Set();
 
-function selectGroup(group){
+async function selectGroup(group){
   currentGroup = group;
   questions = (group === 'A') ? questionsA : questionsB;
   answers = new Array(questions.length).fill(null);
@@ -428,6 +449,25 @@ function selectGroup(group){
   pendingAnswer=null; skipped=new Set();
   phase='quiz';
   document.getElementById('hdr-group-label').textContent = 'Ομάδα ' + group + ' — ΕΟΠΠΕΠ';
+
+  // Έλεγχος αποθηκευμένης προόδου
+  if(window._saekUser && window._saekDb){
+    try {
+      const key = window._saekUser.uid + '_' + group;
+      const progSnap = await window._saekGetDoc(window._saekDoc(window._saekDb, 'progressSAEK', key));
+      if(progSnap.exists()){
+        const p = progSnap.data();
+        window._savedSAEKProgress = p;
+        document.getElementById('saek-resume-info').innerHTML =
+          `Ομάδα ${group} &nbsp;·&nbsp; Ερώτηση ${p.current+1} από ${p.total}`
+          + `&nbsp;&nbsp;<strong style="color:#3fb950;">✓ ${p.score}</strong>`
+          + `&nbsp;&nbsp;<strong style="color:#f85149;">✗ ${p.wrong}</strong>`;
+        document.getElementById('saek-resume-modal').style.display = 'flex';
+        return; // Περιμένουμε την επιλογή του χρήστη
+      }
+    } catch(e){ console.log('No saved SAEK progress'); }
+  }
+
   showQuizLayout();
   render();
   setTimeout(renderGrid, 0);
@@ -581,6 +621,7 @@ function confirmAnswer(){
   answers[current]=correct; answeredSelections[current]=selected;
   skipped.delete(current); pendingAnswer=null;
   render(); renderGrid();
+  saveProgressSAEK();
 }
 
 function skipQuestion(){
@@ -606,6 +647,7 @@ function nextQ(){
 }
 
 function restartGroup(){
+  deleteSAEKProgress(currentGroup);
   current=0; score=0; wrong=0; selected=null; revealed=false; phase='quiz';
   answers=new Array(questions.length).fill(null);
   answeredSelections=new Array(questions.length).fill(null);
@@ -619,7 +661,8 @@ function restartGroup(){
 
 function goHome(){
   if(phase==='quiz'){
-    if(!confirm('Επιστροφή στην αρχική; Η πρόοδός σου θα χαθεί.')) return;
+    if(!confirm('Επιστροφή στην αρχική; Η πρόοδός σου θα αποθηκευτεί.')) return;
+    saveProgressSAEK();
   }
   phase='home'; currentGroup=null; questions=[];
   showHomeScreen();
@@ -645,6 +688,65 @@ function jumpToIdx(idx){
   else { selected=null; revealed=false; pendingAnswer=null; }
   render(); renderGrid();
 }
+
+// ── SAEK Progress ────────────────────────────────────────────────────────────
+async function saveProgressSAEK(){
+  if(!window._saekUser || !window._saekDb || !currentGroup) return;
+  if(phase === 'results') return;
+  try {
+    const key = window._saekUser.uid + '_' + currentGroup;
+    await window._saekSetDoc(
+      window._saekDoc(window._saekDb, 'progressSAEK', key),
+      {
+        uid:               window._saekUser.uid,
+        email:             window._saekUser.email,
+        group:             currentGroup,
+        current:           current,
+        score:             score,
+        wrong:             wrong,
+        total:             questions.length,
+        answers:           Array.from(answers),
+        answeredSelections:Array.from(answeredSelections),
+        skipped:           Array.from(skipped),
+        savedAt:           window._saekTimestamp()
+      }
+    );
+  } catch(e){ console.error('Save SAEK progress error:', e); }
+}
+
+function deleteSAEKProgress(group){
+  if(!window._saekUser || !window._saekDb || !group) return;
+  const key = window._saekUser.uid + '_' + group;
+  window._saekDeleteDoc(window._saekDoc(window._saekDb, 'progressSAEK', key))
+    .catch(e => console.log('Delete SAEK progress error:', e));
+}
+
+window.resumeSAEKProgress = () => {
+  const p = window._savedSAEKProgress;
+  if(!p) return;
+  document.getElementById('saek-resume-modal').style.display = 'none';
+  current  = p.current;
+  score    = p.score;
+  wrong    = p.wrong;
+  phase    = 'quiz';
+  answers  = p.answers ? [...p.answers] : new Array(questions.length).fill(null);
+  answeredSelections = p.answeredSelections ? [...p.answeredSelections] : new Array(questions.length).fill(null);
+  skipped  = new Set(p.skipped || []);
+  selected = null; revealed = false; pendingAnswer = null;
+  showQuizLayout();
+  render(); renderGrid();
+};
+
+window.startSAEKFresh = () => {
+  document.getElementById('saek-resume-modal').style.display = 'none';
+  deleteSAEKProgress(currentGroup);
+  current=0; score=0; wrong=0; selected=null; revealed=false;
+  answers=new Array(questions.length).fill(null);
+  answeredSelections=new Array(questions.length).fill(null);
+  skipped=new Set(); pendingAnswer=null;
+  showQuizLayout();
+  render(); setTimeout(renderGrid,0);
+};
 </script>
 
 </div><!-- /app-root-saek -->

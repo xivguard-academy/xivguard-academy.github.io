@@ -67,7 +67,7 @@
         'Πλατφόρμα εξάσκησης για τις ερωτήσεις πιστοποίησης Ε.Ο.Π.Π.Ε.Π. προσωπικού Ιδιωτικής Ασφάλειας';
     }
 
-    await Promise.all([ loadProgress(user,db), loadQuizResults(user,db), loadSimResults(user,db) ]);
+    await Promise.all([ loadProgress(user,db), loadQuizResults(user,db), loadSimResults(user,db), loadSAEKProgress(user,db) ]);
   });
 
   // ── Progress ──────────────────────────────────────────────────────────────────
@@ -82,6 +82,40 @@
         document.getElementById('prog-score').innerHTML = `<span style="color:#3fb950;font-weight:700;">✓ ${p.score}</span>&nbsp;&nbsp;<span style="color:#f85149;font-weight:700;">✗ ${p.wrong}</span>`;
         document.getElementById('prog-bar').style.width   = pct+'%';
         document.getElementById('prog-pct').textContent   = pct+'%';
+      }
+    } catch(e){}
+  }
+
+  // ── SAEK Progress ─────────────────────────────────────────────────────────────
+  async function loadSAEKProgress(user, db){
+    try {
+      const [snapA, snapB] = await Promise.all([
+        getDoc(doc(db,'progressSAEK', user.uid+'_A')),
+        getDoc(doc(db,'progressSAEK', user.uid+'_B'))
+      ]);
+      const items = [];
+      if(snapA.exists()) items.push({group:'Α', ...snapA.data()});
+      if(snapB.exists()) items.push({group:'Β', ...snapB.data()});
+      if(items.length > 0){
+        const wrap = document.getElementById('saek-progress-wrap');
+        if(wrap){
+          wrap.style.display = 'block';
+          wrap.innerHTML = items.map(p => {
+            const pct = Math.round((p.current / p.total) * 100);
+            return `<div class="progress-card" style="margin-bottom:0.75rem;">
+              <span class="prog-label">⏸ Πρόοδος ΣΑΕΚ — Ομάδα ${p.group}</span>
+              <div class="prog-meta">
+                <span>Ερώτηση ${p.current+1} από ${p.total}</span>
+                <span><span style="color:#3fb950;font-weight:700;">✓ ${p.score}</span>&nbsp;&nbsp;<span style="color:#f85149;font-weight:700;">✗ ${p.wrong}</span></span>
+              </div>
+              <div class="prog-bar-wrap"><div class="prog-bar" style="width:${pct}%"></div></div>
+              <div class="prog-pct">${pct}%</div>
+              <div class="prog-actions">
+                <a href="quiz_SAEK.html" class="btn-continue">▶ Συνέχεια Ομάδας ${p.group}</a>
+              </div>
+            </div>`;
+          }).join('');
+        }
       }
     } catch(e){}
   }
@@ -873,6 +907,9 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
 
     <!-- ── SAEK SECTION ── -->
     <div id="section-saek" style="display:none;">
+
+      <!-- SAEK Progress Cards -->
+      <div id="saek-progress-wrap" style="display:none;margin-bottom:1rem;"></div>
       <div class="panel s-saek-panel">
         <div class="panel-header">
           <div class="panel-header-left">
