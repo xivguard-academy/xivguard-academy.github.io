@@ -45,20 +45,25 @@
     window._db = db; window._fbDoc = doc; window._fbDeleteDoc = deleteDoc;
 
     // ── Track-aware dashboard ────────────────────────────────────────────────
-    const tracks  = data.tracks || ['105h'];
-    const has105h = tracks.includes('105h');
-    const hasSAEK = tracks.includes('SAEK');
+    const tracks    = data.tracks || ['105h'];
+    const has105h   = tracks.includes('105h');
+    const hasSAEK   = tracks.includes('SAEK');
+    const selected  = sessionStorage.getItem('selectedTrack');
 
-    if(!has105h) document.getElementById('section-105h').style.display = 'none';
-    if(hasSAEK)  document.getElementById('section-saek').style.display = 'block';
+    // Αποφάσιση τι να δείξουμε
+    const show105h = has105h && (!hasSAEK || selected === '105h' || !selected);
+    const showSAEK = hasSAEK && (!has105h  || selected === 'SAEK');
+
+    if(!show105h) document.getElementById('section-105h').style.display = 'none';
+    if(showSAEK)  document.getElementById('section-saek').style.display = 'block';
 
     // Προσαρμογή welcome message
-    if(hasSAEK && !has105h){
+    if(showSAEK && !show105h){
       document.getElementById('welcome-sub').textContent =
         'Πλατφόρμα εξάσκησης για το πρόγραμμα ΣΑΕΚ — Στέλεχος Ασφαλείας Προσώπων & Υποδομών';
-    } else if(hasSAEK && has105h){
+    } else if(!showSAEK && show105h){
       document.getElementById('welcome-sub').textContent =
-        'Πλατφόρμα εξάσκησης — Σεμινάριο 105 Ωρών & ΣΑΕΚ';
+        'Πλατφόρμα εξάσκησης για τις ερωτήσεις πιστοποίησης Ε.Ο.Π.Π.Ε.Π. προσωπικού Ιδιωτικής Ασφάλειας';
     }
 
     await Promise.all([ loadProgress(user,db), loadQuizResults(user,db), loadSimResults(user,db) ]);
