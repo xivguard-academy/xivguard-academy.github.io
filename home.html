@@ -67,7 +67,10 @@
         'Πλατφόρμα εξάσκησης για τις ερωτήσεις πιστοποίησης Ε.Ο.Π.Π.Ε.Π. προσωπικού Ιδιωτικής Ασφάλειας';
     }
 
-    await Promise.all([ loadProgress(user,db), loadQuizResults(user,db), loadSimResults(user,db), loadSAEKProgress(user,db) ]);
+    const loads = [];
+    if(show105h) loads.push(loadProgress(user,db), loadQuizResults(user,db), loadSimResults(user,db));
+    if(showSAEK) loads.push(loadSAEKProgress(user,db));
+    await Promise.all(loads);
   });
 
   // ── Progress ──────────────────────────────────────────────────────────────────
