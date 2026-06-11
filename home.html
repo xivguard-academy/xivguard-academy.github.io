@@ -54,6 +54,16 @@
     const show105h = has105h && (!hasSAEK || selected === '105h' || !selected);
     const showSAEK = hasSAEK && (!has105h  || selected === 'SAEK');
 
+    // ── Track Switcher για dual-track χρήστες ────────────────────────────────
+    if(has105h && hasSAEK){
+      const sw = document.getElementById('track-switcher');
+      sw.style.display = 'block';
+      const btn105  = document.getElementById('sw-btn-105h');
+      const btnSAEK = document.getElementById('sw-btn-saek');
+      if(show105h){ btn105.className  = 'ts-btn active-105'; }
+      else        { btnSAEK.className = 'ts-btn active-saek'; }
+    }
+
     if(!show105h) document.getElementById('section-105h').style.display = 'none';
     if(!show105h) document.getElementById('progress-card').style.display = 'none';
     if(showSAEK)  document.getElementById('section-saek').style.display = 'block';
@@ -428,6 +438,11 @@
     document.getElementById('progress-card').style.display='none';
   };
   window.doLogout = async () => { await signOut(auth); window.location.href='index.html'; };
+
+  window.switchTrack = (track) => {
+    sessionStorage.setItem('selectedTrack', track);
+    window.location.reload();
+  };
 </script>
 
 <style>
@@ -465,6 +480,15 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 .welcome-title{font-family:'Lora',Georgia,serif;font-size:1.5rem;font-weight:700;margin-bottom:0.25rem;}
 .welcome-title span{color:var(--gold);}
 .welcome-sub{font-size:0.82rem;color:var(--text3);}
+
+/* ── Track Switcher (dual-track χρήστες) ── */
+#track-switcher{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem 1rem;margin-bottom:1rem;}
+.ts-inner{display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;}
+.ts-label{font-size:0.68rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;}
+.ts-btns{display:flex;gap:6px;flex:1;}
+.ts-btn{flex:1;padding:0.45rem 0.75rem;border-radius:var(--radius-sm);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;border:1.5px solid var(--border2);color:var(--text3);background:var(--bg);transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.ts-btn.active-105{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+.ts-btn.active-saek{background:rgba(56,139,253,0.12);border-color:#388bfd;color:#388bfd;}
 
 /* Progress card */
 .progress-card{background:var(--surface);border:1px solid rgba(239,159,39,0.35);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.5rem;display:none;}
@@ -736,6 +760,27 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
     <div class="welcome">
       <div class="welcome-title">Καλώς ήρθες, <span id="user-email-2"></span></div>
       <div class="welcome-sub" id="welcome-sub">Πλατφόρμα εξάσκησης για τις ερωτήσεις πιστοποίησης Ε.Ο.Π.Π.Ε.Π. προσωπικού Ιδιωτικής Ασφάλειας</div>
+    </div>
+
+    <!-- Track Switcher — εμφανίζεται μόνο σε dual-track χρήστες -->
+    <div id="track-switcher">
+      <div class="ts-inner">
+        <span class="ts-label">Κατηγορία</span>
+        <div class="ts-btns">
+          <button class="ts-btn" id="sw-btn-105h" onclick="switchTrack('105h')">
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            </svg>
+            Σεμινάριο 105ω
+          </button>
+          <button class="ts-btn" id="sw-btn-saek" onclick="switchTrack('SAEK')">
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
+            </svg>
+            ΣΑΕΚ 4 Εξάμηνα
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Αποθηκευμένη πρόοδος -->
