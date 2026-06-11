@@ -12,7 +12,7 @@
      ═══════════════════════════════════════════════ -->
 <script type="module">
   import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged }
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail }
                                     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc, serverTimestamp }
                                     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -174,12 +174,49 @@
     return map[code] || 'Σφάλμα: ' + code;
   }
 
+  // ── Forgot Password ───────────────────────────────────────────────────────
+  window.showResetPanel = () => {
+    const prefill = document.getElementById('login-email').value.trim();
+    if(prefill) document.getElementById('reset-email').value = prefill;
+    document.getElementById('panel-login').style.display    = 'none';
+    document.getElementById('panel-register').style.display = 'none';
+    document.getElementById('panel-reset').style.display    = 'block';
+    document.getElementById('status-msg').style.display     = 'none';
+    document.getElementById('reset-success').style.display  = 'none';
+    document.getElementById('reset-error').textContent      = '';
+  };
+
+  window.showLoginPanel = () => {
+    document.getElementById('panel-reset').style.display    = 'none';
+    document.getElementById('panel-login').style.display    = 'block';
+    document.getElementById('tab-login').classList.add('active');
+    document.getElementById('tab-reg').classList.remove('active');
+  };
+
+  window.doResetPassword = async () => {
+    const email = document.getElementById('reset-email').value.trim();
+    const errEl = document.getElementById('reset-error');
+    errEl.textContent = '';
+    if(!email){ errEl.textContent = 'Εισήγαγε το email σου.'; return; }
+    const btn = document.getElementById('reset-btn');
+    btn.disabled = true; btn.textContent = 'Αποστολή...';
+    try {
+      await sendPasswordResetEmail(auth, email);
+      document.getElementById('reset-success').style.display = 'block';
+      btn.textContent = 'Αποστολή'; btn.disabled = false;
+    } catch(e){
+      btn.disabled = false; btn.textContent = 'Αποστολή';
+      errEl.textContent = translateError(e.code);
+    }
+  };
+
   // ── Tab switching ─────────────────────────────────────────────────────────
   window.switchTab = (tab) => {
     document.getElementById('tab-login').classList.toggle('active', tab==='login');
     document.getElementById('tab-reg').classList.toggle('active', tab==='register');
     document.getElementById('panel-login').style.display    = tab==='login'    ? 'block' : 'none';
     document.getElementById('panel-register').style.display = tab==='register' ? 'block' : 'none';
+    document.getElementById('panel-reset').style.display    = 'none';
     document.getElementById('status-msg').style.display     = 'none';
   };
 
@@ -187,8 +224,9 @@
   window.addEventListener('keydown', e => {
     if(e.key !== 'Enter') return;
     const loginPanel = document.getElementById('panel-login');
-    const regPanel   = document.getElementById('panel-register');
+    const resetPanel = document.getElementById('panel-reset');
     if(loginPanel.style.display !== 'none') doLogin();
+    else if(resetPanel.style.display !== 'none') doResetPassword();
     else doRegister();
   });
 </script>
@@ -283,6 +321,14 @@ body{
 .divider{height:1px;background:var(--border);margin:1.25rem 0;}
 .hint{font-size:0.72rem;color:var(--text3);text-align:center;line-height:1.7;}
 
+/* Forgot password */
+.forgot-link{text-align:right;margin-top:-0.5rem;margin-bottom:1rem;}
+.forgot-link a{font-size:0.75rem;color:var(--gold);text-decoration:none;font-weight:500;opacity:0.8;transition:opacity 0.15s;cursor:pointer;}
+.forgot-link a:hover{opacity:1;}
+#reset-success{display:none;background:rgba(63,185,80,0.08);border:1px solid rgba(63,185,80,0.3);border-radius:var(--radius-sm);padding:1rem;font-size:0.82rem;color:var(--green);font-weight:600;text-align:center;line-height:1.7;}
+.reset-back{display:block;width:100%;text-align:center;margin-top:1rem;font-size:0.78rem;color:var(--text3);cursor:pointer;background:none;border:none;font-family:inherit;transition:color 0.15s;}
+.reset-back:hover{color:var(--text2);}
+
 /* Footer */
 .footer{text-align:center;margin-top:1.5rem;font-size:0.65rem;color:var(--text3);letter-spacing:0.05em;}
 
@@ -363,8 +409,24 @@ body{
         <label>Κωδικός</label>
         <input id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password"/>
       </div>
+      <div class="forgot-link"><a onclick="showResetPanel()">Ξέχασες τον κωδικό σου;</a></div>
       <button class="submit-btn" id="login-btn" onclick="doLogin()">Σύνδεση →</button>
       <div class="error-msg" id="login-error"></div>
+    </div>
+
+    <!-- Reset Password Panel -->
+    <div id="panel-reset" class="panel" style="display:none;">
+      <div class="field">
+        <label>Email λογαριασμού</label>
+        <input id="reset-email" type="email" placeholder="example@email.com" autocomplete="email"/>
+      </div>
+      <button class="submit-btn" id="reset-btn" onclick="doResetPassword()">Αποστολή συνδέσμου →</button>
+      <div class="error-msg" id="reset-error"></div>
+      <div id="reset-success">
+        ✅ Στάλθηκε email επαναφοράς κωδικού!<br>
+        Έλεγξε τα εισερχόμενά σου και ακολούθησε τον σύνδεσμο.
+      </div>
+      <button class="reset-back" onclick="showLoginPanel()">← Επιστροφή στη Σύνδεση</button>
     </div>
 
     <!-- Register Panel -->
