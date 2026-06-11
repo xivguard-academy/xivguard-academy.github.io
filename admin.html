@@ -62,8 +62,8 @@
     document.getElementById('badge-active').textContent   = approved.length || '';
     document.getElementById('badge-disabled').textContent = disabled.length || '';
 
-    renderUserTable('pending-tbody',  pending,  3, 'pending');
-    renderUserTable('active-tbody',   approved, 3, 'active');
+    renderUserTable('pending-tbody',  pending,  4, 'pending');
+    renderUserTable('active-tbody',   approved, 4, 'active');
     renderUserTable('disabled-tbody', disabled, 3, 'disabled');
   }
 
@@ -78,7 +78,12 @@
       if(type === 'pending')  actions = `<button class="btn-approve" onclick="approveUser('${u.id}')">✓ Έγκριση</button><button class="btn-reject" onclick="rejectUser('${u.id}','${u.email}')">✗ Απόρριψη</button>`;
       if(type === 'active')   actions = `<button class="btn-disable" onclick="disableUser('${u.id}','${u.email}')">🚫 Απενεργοποίηση</button><button class="btn-delete" onclick="deleteUser('${u.id}','${u.email}')">🗑 Διαγραφή</button>`;
       if(type === 'disabled') actions = `<button class="btn-approve" onclick="approveUser('${u.id}')">↩ Επαναφορά</button><button class="btn-delete" onclick="deleteUser('${u.id}','${u.email}')">🗑 Διαγραφή</button>`;
-      return `<tr><td>${u.email}</td><td>${formatDate(u.createdAt)}</td><td class="actions">${actions}</td></tr>`;
+      const tracks = u.tracks || ['105h'];
+      let tracksCol = '';
+      if(type === 'pending') tracksCol = `<td>${renderTrackDisplay(tracks)}</td>`;
+      if(type === 'active')  tracksCol = `<td class="tracks-cell">${renderTrackToggles(u.id, tracks)}</td>`;
+      const extraCols = (type === 'pending' || type === 'active') ? tracksCol : '';
+      return `<tr><td>${u.email}</td><td>${formatDate(u.createdAt)}</td>${extraCols}<td class="actions">${actions}</td></tr>`;
     }).join('');
   }
 
@@ -194,6 +199,36 @@
     icon.style.color = open ? 'var(--gold)' : '';
   };
 
+  // ── Track Management ───────────────────────────────────────────────────────
+  window.toggleTrack = async (uid, track) => {
+    const snap = await getDoc(doc(db,'users',uid));
+    if(!snap.exists()) return;
+    let tracks = snap.data().tracks || ['105h'];
+    if(tracks.includes(track)){
+      const next = tracks.filter(t => t !== track);
+      if(next.length === 0){ toast('⚠️ Πρέπει να υπάρχει τουλάχιστον ένα track.'); return; }
+      tracks = next;
+    } else {
+      tracks = [...tracks, track];
+    }
+    await updateDoc(doc(db,'users',uid), { tracks });
+    toast('✅ Tracks ενημερώθηκαν!');
+    loadUsers();
+  };
+
+  function renderTrackToggles(uid, tracks){
+    const has105h = tracks.includes('105h');
+    const hasSAEK = tracks.includes('SAEK');
+    return `<span class="tr-tog ${has105h?'tr-tog--gold':'tr-tog--off'}" onclick="toggleTrack('${uid}','105h')" title="Εναλλαγή 105ωρού">105ωρο</span>`
+         + `<span class="tr-tog ${hasSAEK?'tr-tog--blue':'tr-tog--off'}" onclick="toggleTrack('${uid}','SAEK')" title="Εναλλαγή ΣΑΕΚ">ΣΑΕΚ</span>`;
+  }
+
+  function renderTrackDisplay(tracks){
+    return (tracks||['105h']).map(t =>
+      `<span class="tr-badge ${t==='105h'?'tr-badge--gold':'tr-badge--blue'}">${t==='105h'?'105ωρο':'ΣΑΕΚ'}</span>`
+    ).join(' ');
+  }
+
   // ── Actions ────────────────────────────────────────────────────────────────
   window.approveUser = async (uid) => {
     await updateDoc(doc(db,'users',uid),{status:'approved'});
@@ -283,6 +318,19 @@ tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
 
 /* Action buttons */
 .actions{display:flex;gap:0.5rem;flex-wrap:wrap;}
+
+/* Track badges & toggles */
+.tracks-cell{white-space:nowrap;}
+.tr-badge{display:inline-block;font-size:0.65rem;font-weight:700;letter-spacing:0.06em;border-radius:5px;padding:0.18rem 0.5rem;margin-right:3px;}
+.tr-badge--gold{background:rgba(239,159,39,0.12);color:var(--gold);border:1px solid rgba(239,159,39,0.3);}
+.tr-badge--blue{background:rgba(56,139,253,0.12);color:#388bfd;border:1px solid rgba(56,139,253,0.3);}
+.tr-tog{display:inline-block;font-size:0.65rem;font-weight:700;letter-spacing:0.06em;border-radius:5px;padding:0.18rem 0.5rem;margin-right:3px;cursor:pointer;transition:all 0.15s;user-select:none;}
+.tr-tog--gold{background:rgba(239,159,39,0.15);color:var(--gold);border:1px solid rgba(239,159,39,0.4);}
+.tr-tog--gold:hover{background:rgba(239,159,39,0.28);}
+.tr-tog--blue{background:rgba(56,139,253,0.15);color:#388bfd;border:1px solid rgba(56,139,253,0.4);}
+.tr-tog--blue:hover{background:rgba(56,139,253,0.28);}
+.tr-tog--off{background:rgba(100,100,120,0.08);color:var(--text3);border:1px solid var(--border2);}
+.tr-tog--off:hover{background:rgba(100,100,120,0.18);color:var(--text2);}
 .btn-approve{background:rgba(63,185,80,0.1);border:1px solid rgba(63,185,80,0.3);border-radius:6px;padding:0.3rem 0.7rem;color:var(--green);font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
 .btn-approve:hover{background:rgba(63,185,80,0.2);}
 .btn-reject{background:rgba(248,81,73,0.1);border:1px solid rgba(248,81,73,0.3);border-radius:6px;padding:0.3rem 0.7rem;color:var(--red);font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
@@ -364,8 +412,8 @@ tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Email</th><th>Ημ/νία Εγγραφής</th><th>Ενέργειες</th></tr></thead>
-          <tbody id="pending-tbody"><tr><td colspan="3" class="empty-msg">Φόρτωση...</td></tr></tbody>
+          <thead><tr><th>Email</th><th>Ημ/νία Εγγραφής</th><th>Track</th><th>Ενέργειες</th></tr></thead>
+          <tbody id="pending-tbody"><tr><td colspan="4" class="empty-msg">Φόρτωση...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -380,8 +428,8 @@ tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Email</th><th>Ημ/νία Εγγραφής</th><th>Ενέργειες</th></tr></thead>
-          <tbody id="active-tbody"><tr><td colspan="3" class="empty-msg">Φόρτωση...</td></tr></tbody>
+          <thead><tr><th>Email</th><th>Ημ/νία Εγγραφής</th><th>Tracks</th><th>Ενέργειες</th></tr></thead>
+          <tbody id="active-tbody"><tr><td colspan="4" class="empty-msg">Φόρτωση...</td></tr></tbody>
         </table>
       </div>
     </div>
