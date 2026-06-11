@@ -44,6 +44,23 @@
     window._progressUid = user.uid;
     window._db = db; window._fbDoc = doc; window._fbDeleteDoc = deleteDoc;
 
+    // ── Track-aware dashboard ────────────────────────────────────────────────
+    const tracks  = data.tracks || ['105h'];
+    const has105h = tracks.includes('105h');
+    const hasSAEK = tracks.includes('SAEK');
+
+    if(!has105h) document.getElementById('section-105h').style.display = 'none';
+    if(hasSAEK)  document.getElementById('section-saek').style.display = 'block';
+
+    // Προσαρμογή welcome message
+    if(hasSAEK && !has105h){
+      document.getElementById('welcome-sub').textContent =
+        'Πλατφόρμα εξάσκησης για το πρόγραμμα ΣΑΕΚ — Στέλεχος Ασφαλείας Προσώπων & Υποδομών';
+    } else if(hasSAEK && has105h){
+      document.getElementById('welcome-sub').textContent =
+        'Πλατφόρμα εξάσκησης — Σεμινάριο 105 Ωρών & ΣΑΕΚ';
+    }
+
     await Promise.all([ loadProgress(user,db), loadQuizResults(user,db), loadSimResults(user,db) ]);
   });
 
@@ -431,6 +448,23 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 .panel-badge{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:0.2rem 0.6rem;border-radius:20px;}
 .panel-badge--quiz{background:rgba(239,159,39,0.12);color:var(--gold);border:1px solid rgba(239,159,39,0.3);}
 .panel-badge--sim{background:rgba(88,166,255,0.12);color:var(--blue);border:1px solid rgba(88,166,255,0.3);}
+.panel-badge--saek{background:rgba(56,139,253,0.12);color:#388bfd;border:1px solid rgba(56,139,253,0.3);}
+.mode-link--saek{background:#388bfd;color:#fff;}
+.mode-link--saek:hover{background:#5a9eff;}
+.s-saek-panel{ border-color: rgba(56,139,253,0.25); }
+.saek-info-msg{
+  background:rgba(56,139,253,0.06);border:1px solid rgba(56,139,253,0.15);
+  border-radius:var(--radius-sm);padding:1.25rem;
+  display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;
+  margin-top:0.5rem;
+}
+.saek-group-card{
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--radius-sm);padding:1rem;text-align:center;
+}
+.saek-group-card .sg-name{font-size:1.5rem;font-weight:800;color:#388bfd;}
+.saek-group-card .sg-count{font-size:0.72rem;color:var(--text3);margin-top:2px;}
+.saek-group-card .sg-lbl{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:0.25rem;}
 .mode-link--compact{padding:0.4rem 0.875rem;font-size:0.78rem;margin-top:0;}
 
 /* Stats grid inside panel */
@@ -658,7 +692,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
     <!-- Welcome -->
     <div class="welcome">
       <div class="welcome-title">Καλώς ήρθες, <span id="user-email-2"></span></div>
-      <div class="welcome-sub">Πλατφόρμα εξάσκησης για τις ερωτήσεις πιστοποίησης Ε.Ο.Π.Π.Ε.Π. προσωπικού Ιδιωτικής Ασφάλειας</div>
+      <div class="welcome-sub" id="welcome-sub">Πλατφόρμα εξάσκησης για τις ερωτήσεις πιστοποίησης Ε.Ο.Π.Π.Ε.Π. προσωπικού Ιδιωτικής Ασφάλειας</div>
     </div>
 
     <!-- Αποθηκευμένη πρόοδος -->
@@ -677,6 +711,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
     </div>
 
     <!-- Dashboard: Quiz & Simulation side by side -->
+    <div id="section-105h">
     <div class="dashboard-grid">
 
       <!-- ── QUIZ PANEL ── -->
@@ -828,6 +863,44 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
       </div>
 
     </div><!-- /dashboard-grid -->
+    </div><!-- /section-105h -->
+
+    <!-- ── SAEK SECTION ── -->
+    <div id="section-saek" style="display:none;">
+      <div class="panel s-saek-panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <span class="panel-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#388bfd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
+              </svg>
+            </span>
+            <span class="panel-title">ΣΑΕΚ — Τράπεζα Θεμάτων</span>
+            <span class="panel-badge panel-badge--saek">ΣΑΕΚ 4 Εξάμηνα</span>
+          </div>
+          <a href="quiz_SAEK.html" class="mode-link mode-link--saek mode-link--compact">▶ Έναρξη Quiz</a>
+        </div>
+
+        <div class="saek-info-msg">
+          <div class="saek-group-card">
+            <div class="sg-lbl">Ομάδα</div>
+            <div class="sg-name">Α</div>
+            <div class="sg-count">124 ερωτήσεις</div>
+          </div>
+          <div class="saek-group-card">
+            <div class="sg-lbl">Ομάδα</div>
+            <div class="sg-name">Β</div>
+            <div class="sg-count">139 ερωτήσεις</div>
+          </div>
+        </div>
+
+        <div style="margin-top:0.875rem;font-size:0.78rem;color:var(--text3);line-height:1.6;">
+          Εξασκήσου στις ερωτήσεις πιστοποίησης <strong style="color:var(--text2);">ΕΟΠΠΕΠ</strong> για το πρόγραμμα
+          <strong style="color:#388bfd;">Στελέχους Ασφαλείας Προσώπων & Υποδομών</strong>.
+          Επίλεξε ομάδα ερωτήσεων και ξεκίνα την εξάσκησή σου.
+        </div>
+      </div>
+    </div><!-- /section-saek -->
 
     <!-- Info -->
     <div class="info-card">
