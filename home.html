@@ -55,6 +55,7 @@
     const showSAEK = hasSAEK && (!has105h  || selected === 'SAEK');
 
     if(!show105h) document.getElementById('section-105h').style.display = 'none';
+    if(!show105h) document.getElementById('progress-card').style.display = 'none';
     if(showSAEK)  document.getElementById('section-saek').style.display = 'block';
 
     // Προσαρμογή welcome message
