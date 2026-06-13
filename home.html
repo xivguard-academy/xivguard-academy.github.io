@@ -551,6 +551,10 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 .saek-group-card{
   background:var(--surface2);border:1px solid var(--border2);
   border-radius:var(--radius-sm);padding:1rem;text-align:center;
+  cursor:pointer;transition:border-color 0.15s,background 0.15s;
+}
+.saek-group-card:hover{
+  border-color:#388bfd;background:rgba(56,139,253,0.08);
 }
 .saek-group-card .sg-name{font-size:1.5rem;font-weight:800;color:#388bfd;}
 .saek-group-card .sg-count{font-size:0.72rem;color:var(--text3);margin-top:2px;}
@@ -992,17 +996,16 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
             <span class="panel-title">ΣΑΕΚ — Τράπεζα Θεμάτων</span>
             <span class="panel-badge panel-badge--saek">Ερωτήσεις Πιστοποίησης ΣΑΕΚ</span>
           </div>
-          <a href="quiz_SAEK.html" class="mode-link mode-link--saek mode-link--compact">▶ Έναρξη Quiz</a>
         </div>
 
         <div class="saek-info-msg">
-          <div class="saek-group-card">
+          <div class="saek-group-card" onclick="location.href='quiz_SAEK.html?group=A'">
             <div class="sg-lbl">Ομάδα</div>
             <div class="sg-name">Α</div>
             <div class="sg-count">124 ερωτήσεις</div>
             <div id="saek-result-A" style="display:none;margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--border2);"></div>
           </div>
-          <div class="saek-group-card">
+          <div class="saek-group-card" onclick="location.href='quiz_SAEK.html?group=B'">
             <div class="sg-lbl">Ομάδα</div>
             <div class="sg-name">Β</div>
             <div class="sg-count">139 ερωτήσεις</div>

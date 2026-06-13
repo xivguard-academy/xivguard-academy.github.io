@@ -65,6 +65,13 @@
     document.getElementById('auth-gate-saek').style.display = 'none';
     document.getElementById('app-root-saek').style.display  = 'flex';
 
+    // Auto-select group από URL parameter (π.χ. quiz_SAEK.html?group=A)
+    const urlGroup = new URLSearchParams(window.location.search).get('group');
+    if(urlGroup === 'A' || urlGroup === 'B'){
+      history.replaceState(null, '', window.location.pathname);
+      window.selectGroup(urlGroup);
+    }
+
     // Sign out handler
     window.doSignOut = async () => {
       await signOut(auth);
