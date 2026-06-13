@@ -11,7 +11,7 @@
   import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut }
                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp }
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp, addDoc, collection }
                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -57,7 +57,9 @@
     window._saekGetDoc    = getDoc;
     window._saekSetDoc    = setDoc;
     window._saekDeleteDoc = deleteDoc;
-    window._saekTimestamp = serverTimestamp;
+    window._saekTimestamp  = serverTimestamp;
+    window._saekAddDoc     = addDoc;
+    window._saekCollection = collection;
 
     // Εμφάνιση περιεχομένου
     document.getElementById('auth-gate-saek').style.display = 'none';
@@ -628,22 +630,20 @@ function skipQuestion(){
   skipped.add(current); pendingAnswer=null;
   const next=findNext(current+1);
   if(next!==-1){ current=next; selected=null; revealed=false; render(); renderGrid(); }
-  else { const sk=findNextSkipped(); if(sk!==-1){ current=sk; skipped.delete(sk); selected=null; revealed=false; render(); renderGrid(); } else { phase='results'; render(); } }
-}
-
-function findNext(from){ for(let i=from;i<questions.length;i++) if(answers[i]===null&&!skipped.has(i)) return i; return -1; }
+  else { const sk=findNextSkipped(); if(sk!==-1){ current=sk; skipped.delete(sk); selected=null; revealed=false; render(); renderGrid(); } else { phase='results'; saveResultSAEK(); render(); } }
+}(from){ for(let i=from;i<questions.length;i++) if(answers[i]===null&&!skipped.has(i)) return i; return -1; }
 function findNextSkipped(){ for(let i=0;i<questions.length;i++) if(answers[i]===null&&skipped.has(i)) return i; return -1; }
 
 function nextQ(){
   if(answers[current]!==null&&revealed){
     const next=findNext(current+1);
     if(next!==-1){ current=next; selected=null; revealed=false; pendingAnswer=null; render(); renderGrid(); }
-    else { const fs=findNext(0); if(fs!==-1){ current=fs; selected=null; revealed=false; pendingAnswer=null; render(); renderGrid(); } else { phase='results'; render(); } }
+    else { const fs=findNext(0); if(fs!==-1){ current=fs; selected=null; revealed=false; pendingAnswer=null; render(); renderGrid(); } else { phase='results'; saveResultSAEK(); render(); } }
     return;
   }
   const next=findNext(current+1);
   if(next!==-1){ current=next; selected=null; revealed=false; pendingAnswer=null; render(); renderGrid(); }
-  else { const sk=findNextSkipped(); if(sk!==-1){ current=sk; skipped.delete(sk); selected=null; revealed=false; pendingAnswer=null; render(); renderGrid(); } else { phase='results'; render(); } }
+  else { const sk=findNextSkipped(); if(sk!==-1){ current=sk; skipped.delete(sk); selected=null; revealed=false; pendingAnswer=null; render(); renderGrid(); } else { phase='results'; saveResultSAEK(); render(); } }
 }
 
 function restartGroup(){
@@ -719,6 +719,25 @@ function deleteSAEKProgress(group){
   const key = window._saekUser.uid + '_' + group;
   window._saekDeleteDoc(window._saekDoc(window._saekDb, 'progressSAEK', key))
     .catch(e => console.log('Delete SAEK progress error:', e));
+}
+
+async function saveResultSAEK(){
+  if(!window._saekUser || !window._saekDb || !currentGroup) return;
+  try {
+    await window._saekAddDoc(
+      window._saekCollection(window._saekDb, 'quizResultsSAEK'),
+      {
+        uid:         window._saekUser.uid,
+        email:       window._saekUser.email,
+        group:       currentGroup,
+        score:       score,
+        wrong:       wrong,
+        total:       questions.length,
+        pct:         Math.round(score / questions.length * 100),
+        completedAt: window._saekTimestamp()
+      }
+    );
+  } catch(e){ console.error('Save SAEK result error:', e); }
 }
 
 window.resumeSAEKProgress = () => {

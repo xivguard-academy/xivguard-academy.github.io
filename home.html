@@ -79,7 +79,7 @@
 
     const loads = [];
     if(show105h) loads.push(loadProgress(user,db), loadQuizResults(user,db), loadSimResults(user,db));
-    if(showSAEK) loads.push(loadSAEKProgress(user,db));
+    if(showSAEK) loads.push(loadSAEKProgress(user,db), loadSAEKResults(user,db));
     await Promise.all(loads);
   });
 
@@ -131,6 +131,29 @@
         }
       }
     } catch(e){}
+  }
+
+  // ── SAEK Quiz Results ─────────────────────────────────────────────────────────
+  async function loadSAEKResults(user, db){
+    try {
+      const [snapA, snapB] = await Promise.all([
+        getDocs(query(collection(db,'quizResultsSAEK'), where('uid','==',user.uid), where('group','==','A'), orderBy('completedAt','desc'), limit(1))),
+        getDocs(query(collection(db,'quizResultsSAEK'), where('uid','==',user.uid), where('group','==','B'), orderBy('completedAt','desc'), limit(1)))
+      ]);
+      const renderResult = (snap, elId) => {
+        if(snap.empty) return;
+        const r = snap.docs[0].data();
+        const color = r.pct>=80?'#3fb950':r.pct>=60?'#EF9F27':'#f85149';
+        const date  = r.completedAt ? r.completedAt.toDate().toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+        const el = document.getElementById(elId);
+        if(!el) return;
+        el.style.display = 'block';
+        el.innerHTML = `<div style="color:${color};font-weight:700;font-size:0.88rem;">${r.pct}% &nbsp;·&nbsp; ${r.score}/${r.total}</div>
+          <div style="color:var(--text3);font-size:0.7rem;margin-top:0.2rem;">Τελευταία: ${date}</div>`;
+      };
+      renderResult(snapA, 'saek-result-A');
+      renderResult(snapB, 'saek-result-B');
+    } catch(e){ console.error('SAEK results error:',e); }
   }
 
   // ── Quiz Results ──────────────────────────────────────────────────────────────
@@ -977,11 +1000,13 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
             <div class="sg-lbl">Ομάδα</div>
             <div class="sg-name">Α</div>
             <div class="sg-count">124 ερωτήσεις</div>
+            <div id="saek-result-A" style="display:none;margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--border2);"></div>
           </div>
           <div class="saek-group-card">
             <div class="sg-lbl">Ομάδα</div>
             <div class="sg-name">Β</div>
             <div class="sg-count">139 ερωτήσεις</div>
+            <div id="saek-result-B" style="display:none;margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--border2);"></div>
           </div>
         </div>
 
@@ -997,7 +1022,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
     <div class="info-card">
       <div class="section-title">ℹ️ Πληροφορίες Εξέτασης Ερωτήσεων Ε.Ο.Π.Π.Ε.Π.</div>
       <div class="info-grid">
-        <div class="info-item"><div class="info-item-val">181</div><div class="info-item-lbl">Ερωτήσεις Τράπεζας</div></div>
+        <div class="info-item"><div class="info-item-val">263</div><div class="info-item-lbl">Ερωτήσεις Τράπεζας</div></div>
         <div class="info-item"><div class="info-item-val">80%</div><div class="info-item-lbl">Βαθμός Quiz</div></div>
         <div class="info-item"><div class="info-item-val">≥10</div><div class="info-item-lbl">Βαθμός Simulation</div></div>
       </div>
