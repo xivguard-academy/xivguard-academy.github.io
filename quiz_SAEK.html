@@ -67,8 +67,10 @@
 
     // Auto-select group από URL parameter (π.χ. quiz_SAEK.html?group=A)
     const urlGroup = new URLSearchParams(window.location.search).get('group');
+    const urlResume = new URLSearchParams(window.location.search).get('resume');
     if(urlGroup === 'A' || urlGroup === 'B'){
       history.replaceState(null, '', window.location.pathname);
+      if(urlResume === '1') window._saekAutoResume = true;
       window.selectGroup(urlGroup);
     }
 
@@ -458,6 +460,7 @@ async function selectGroup(group){
   pendingAnswer=null; skipped=new Set();
   phase='quiz';
   document.getElementById('hdr-group-label').textContent = 'Ομάδα ' + group + ' — ΕΟΠΠΕΠ';
+  showQuizLayout();
 
   // Έλεγχος αποθηκευμένης προόδου
   if(window._saekUser && window._saekDb){
@@ -467,6 +470,11 @@ async function selectGroup(group){
       if(progSnap.exists()){
         const p = progSnap.data();
         window._savedSAEKProgress = p;
+        if(window._saekAutoResume){
+          window._saekAutoResume = false;
+          window.resumeSAEKProgress();
+          return;
+        }
         document.getElementById('saek-resume-info').innerHTML =
           `Ομάδα ${group} &nbsp;·&nbsp; Ερώτηση ${p.current+1} από ${p.total}`
           + `&nbsp;&nbsp;<strong style="color:#3fb950;">✓ ${p.score}</strong>`
@@ -477,7 +485,6 @@ async function selectGroup(group){
     } catch(e){ console.log('No saved SAEK progress'); }
   }
 
-  showQuizLayout();
   render();
   setTimeout(renderGrid, 0);
 }

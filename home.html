@@ -42,7 +42,7 @@
     document.getElementById('user-email-2').textContent = user.email.split('@')[0];
 
     window._progressUid = user.uid;
-    window._db = db; window._fbDoc = doc; window._fbDeleteDoc = deleteDoc;
+    window._db = db; window._fbDoc = doc; window._fbGetDoc = getDoc; window._fbDeleteDoc = deleteDoc;
 
     // ── Track-aware dashboard ────────────────────────────────────────────────
     const tracks    = data.tracks || ['105h'];
@@ -999,13 +999,13 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
         </div>
 
         <div class="saek-info-msg">
-          <div class="saek-group-card" onclick="location.href='quiz_SAEK.html?group=A'">
+          <div class="saek-group-card" onclick="checkAndGoSAEK('A')">
             <div class="sg-lbl">Ομάδα</div>
             <div class="sg-name">Α</div>
             <div class="sg-count">124 ερωτήσεις</div>
             <div id="saek-result-A" style="display:none;margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--border2);"></div>
           </div>
-          <div class="saek-group-card" onclick="location.href='quiz_SAEK.html?group=B'">
+          <div class="saek-group-card" onclick="checkAndGoSAEK('B')">
             <div class="sg-lbl">Ομάδα</div>
             <div class="sg-name">Β</div>
             <div class="sg-count">139 ερωτήσεις</div>
@@ -1034,7 +1034,64 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
   </main>
 </div>
 
+<!-- ── ΣΑΕΚ Resume Modal ── -->
+<div id="saek-home-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:2rem;max-width:420px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.5);">
+    <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;color:var(--gold);text-transform:uppercase;margin-bottom:0.75rem;">⏸ Αποθηκευμένη Πρόοδος</div>
+    <div id="saek-home-modal-info" style="font-size:0.88rem;color:var(--text2);margin-bottom:1.5rem;"></div>
+    <div style="display:flex;gap:0.75rem;justify-content:center;">
+      <button onclick="saekHomeResume()" style="flex:1;padding:0.75rem;background:var(--gold);color:#0b0d14;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;">▶ Συνέχεια</button>
+      <button onclick="saekHomeFresh()" style="flex:1;padding:0.75rem;background:transparent;color:var(--text3);border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-family:inherit;font-size:0.88rem;font-weight:600;cursor:pointer;">✕ Νέο Quiz</button>
+    </div>
+    <button onclick="saekHomeModalClose()" style="margin-top:0.875rem;background:none;border:none;color:var(--text3);font-size:0.75rem;cursor:pointer;font-family:inherit;">Άκυρο</button>
+  </div>
+</div>
+
 <script>
+// ── ΣΑΕΚ Group Click — έλεγχος αποθηκευμένης προόδου ────────────────────────
+let _saekPendingGroup = null;
+
+async function checkAndGoSAEK(group){
+  _saekPendingGroup = group;
+  if(window._db && window._fbDoc && window._fbGetDoc && window._progressUid){
+    try {
+      const key = window._progressUid + '_' + group;
+      const snap = await window._fbGetDoc(window._fbDoc(window._db, 'progressSAEK', key));
+      if(snap.exists()){
+        const p = snap.data();
+        const gl = group === 'A' ? 'Α' : 'Β';
+        document.getElementById('saek-home-modal-info').innerHTML =
+          `Ομάδα ${gl} &nbsp;·&nbsp; Ερώτηση ${p.current+1} από ${p.total}`
+          + `&nbsp;&nbsp;<strong style="color:#3fb950;">✓ ${p.score}</strong>`
+          + `&nbsp;&nbsp;<strong style="color:#f85149;">✗ ${p.wrong}</strong>`;
+        document.getElementById('saek-home-modal').style.display = 'flex';
+        return;
+      }
+    } catch(e){}
+  }
+  location.href = 'quiz_SAEK.html?group=' + group;
+}
+
+function saekHomeResume(){
+  document.getElementById('saek-home-modal').style.display = 'none';
+  location.href = 'quiz_SAEK.html?group=' + _saekPendingGroup + '&resume=1';
+}
+
+function saekHomeFresh(){
+  document.getElementById('saek-home-modal').style.display = 'none';
+  if(window._progressUid && window._db && window._fbDoc && window._fbDeleteDoc){
+    const key = window._progressUid + '_' + _saekPendingGroup;
+    window._fbDeleteDoc(window._fbDoc(window._db, 'progressSAEK', key))
+      .catch(e => console.log('Delete progress error:', e));
+  }
+  location.href = 'quiz_SAEK.html?group=' + _saekPendingGroup;
+}
+
+function saekHomeModalClose(){
+  document.getElementById('saek-home-modal').style.display = 'none';
+  _saekPendingGroup = null;
+}
+
 // ── Cinematic Intro — scan-reveal sync ───────────────────────────────────────
 (function(){
   const screen = document.getElementById('intro-screen');
