@@ -631,7 +631,8 @@ function skipQuestion(){
   const next=findNext(current+1);
   if(next!==-1){ current=next; selected=null; revealed=false; render(); renderGrid(); }
   else { const sk=findNextSkipped(); if(sk!==-1){ current=sk; skipped.delete(sk); selected=null; revealed=false; render(); renderGrid(); } else { phase='results'; saveResultSAEK(); render(); } }
-}(from){ for(let i=from;i<questions.length;i++) if(answers[i]===null&&!skipped.has(i)) return i; return -1; }
+}
+function findNext(from){ for(let i=from;i<questions.length;i++) if(answers[i]===null&&!skipped.has(i)) return i; return -1; }
 function findNextSkipped(){ for(let i=0;i<questions.length;i++) if(answers[i]===null&&skipped.has(i)) return i; return -1; }
 
 function nextQ(){
