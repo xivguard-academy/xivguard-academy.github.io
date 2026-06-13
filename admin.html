@@ -90,28 +90,37 @@
   // ── Load stats (quiz + simulation, grouped by user) ────────────────────────
   async function loadStats(){
     try {
-      const [quizSnap, simSnap] = await Promise.all([
-        getDocs(query(collection(db,'quizResults'),    orderBy('completedAt','desc'))),
-        getDocs(query(collection(db,'simulationResults'), orderBy('completedAt','desc')))
+      const [quizSnap, simSnap, saekSnap] = await Promise.all([
+        getDocs(query(collection(db,'quizResults'),       orderBy('completedAt','desc'))),
+        getDocs(query(collection(db,'simulationResults'), orderBy('completedAt','desc'))),
+        getDocs(query(collection(db,'quizResultsSAEK'),   orderBy('completedAt','desc')))
       ]);
 
       // Build per-user map
-      const userMap = {}; // uid → { email, quiz:[], sim:[] }
+      const userMap = {}; // uid → { email, quiz:[], sim:[], saekA:[], saekB:[] }
+      const emptyUser = (email) => ({ email, quiz:[], sim:[], saekA:[], saekB:[] });
 
       quizSnap.forEach(d => {
         const r = d.data();
-        if(!userMap[r.uid]) userMap[r.uid] = { email: r.email || r.uid, quiz: [], sim: [] };
+        if(!userMap[r.uid]) userMap[r.uid] = emptyUser(r.email || r.uid);
         userMap[r.uid].quiz.push(r);
       });
 
       simSnap.forEach(d => {
         const r = d.data();
-        if(!userMap[r.uid]) userMap[r.uid] = { email: r.email || r.uid, quiz: [], sim: [] };
+        if(!userMap[r.uid]) userMap[r.uid] = emptyUser(r.email || r.uid);
         userMap[r.uid].sim.push(r);
       });
 
+      saekSnap.forEach(d => {
+        const r = d.data();
+        if(!userMap[r.uid]) userMap[r.uid] = emptyUser(r.email || r.uid);
+        if(r.group === 'A') userMap[r.uid].saekA.push(r);
+        else if(r.group === 'B') userMap[r.uid].saekB.push(r);
+      });
+
       const users = Object.entries(userMap);
-      const totalAttempts = users.reduce((s,[,u])=>s+u.quiz.length+u.sim.length,0);
+      const totalAttempts = users.reduce((s,[,u])=>s+u.quiz.length+u.sim.length+u.saekA.length+u.saekB.length,0);
       document.getElementById('badge-stats').textContent = users.length || '';
 
       const tbody = document.getElementById('stats-tbody');
@@ -121,23 +130,35 @@
       }
 
       // Sort: most activity first
-      users.sort(([,a],[,b]) => (b.quiz.length+b.sim.length) - (a.quiz.length+a.sim.length));
+      users.sort(([,a],[,b]) => (b.quiz.length+b.sim.length+b.saekA.length+b.saekB.length) - (a.quiz.length+a.sim.length+a.saekA.length+a.saekB.length));
 
       tbody.innerHTML = users.map(([uid, u], idx) => {
-        // Quiz summary
-        const qPcts   = u.quiz.map(r => r.percentage ?? Math.round(r.score/r.total*100));
-        const qBest   = qPcts.length ? Math.max(...qPcts) : null;
-        const qAvg    = qPcts.length ? Math.round(qPcts.reduce((a,b)=>a+b,0)/qPcts.length) : null;
-        const qColor  = qBest===null?'var(--text3)':qBest>=80?'var(--green)':qBest>=60?'var(--gold)':'var(--red)';
+        // Quiz 105h summary
+        const qPcts  = u.quiz.map(r => r.percentage ?? Math.round(r.score/r.total*100));
+        const qBest  = qPcts.length ? Math.max(...qPcts) : null;
+        const qAvg   = qPcts.length ? Math.round(qPcts.reduce((a,b)=>a+b,0)/qPcts.length) : null;
+        const qColor = qBest===null?'var(--text3)':qBest>=80?'var(--green)':qBest>=60?'var(--gold)':'var(--red)';
 
-        // Sim summary
+        // Simulation summary
         const sAvgs   = u.sim.map(r => r.average ?? (r.partAScore+r.partBScore)/2);
         const sBest   = sAvgs.length ? Math.max(...sAvgs) : null;
         const sPasses = u.sim.filter(r=>r.passed).length;
         const sColor  = sBest===null?'var(--text3)':sBest>=10?'var(--green)':'var(--red)';
 
-        // Detail rows: quiz
-        const qRows = u.quiz.map((r,i) => {
+        // SAEK A summary
+        const aPcts  = u.saekA.map(r => r.pct ?? Math.round(r.score/r.total*100));
+        const aBest  = aPcts.length ? Math.max(...aPcts) : null;
+        const aColor = aBest===null?'var(--text3)':aBest>=80?'var(--green)':aBest>=60?'var(--gold)':'var(--red)';
+
+        // SAEK B summary
+        const bPcts  = u.saekB.map(r => r.pct ?? Math.round(r.score/r.total*100));
+        const bBest  = bPcts.length ? Math.max(...bPcts) : null;
+        const bColor = bBest===null?'var(--text3)':bBest>=80?'var(--green)':bBest>=60?'var(--gold)':'var(--red)';
+
+        const totalAtt = u.quiz.length + u.sim.length + u.saekA.length + u.saekB.length;
+
+        // Detail rows: quiz 105h
+        const qRows = u.quiz.length === 0 ? '' : u.quiz.map((r,i) => {
           const pct = r.percentage ?? Math.round(r.score/r.total*100);
           const c = pct>=80?'var(--green)':pct>=60?'var(--gold)':'var(--red)';
           return `<tr class="detail-row">
@@ -147,10 +168,10 @@
             <td style="color:var(--red);font-size:0.8rem;">${r.wrong??(r.total-r.score)} λάθος</td>
             <td colspan="2"></td>
           </tr>`;
-        }).join('') || `<tr class="detail-row"><td colspan="6" style="padding-left:1.5rem;color:var(--text3);font-size:0.75rem;">Καμία προσπάθεια quiz</td></tr>`;
+        }).join('');
 
         // Detail rows: simulation
-        const sRows = u.sim.map((r,i) => {
+        const sRows = u.sim.length === 0 ? '' : u.sim.map((r,i) => {
           const avg = r.average ?? (r.partAScore+r.partBScore)/2;
           const c = avg>=10?'var(--green)':'var(--red)';
           return `<tr class="detail-row">
@@ -160,27 +181,56 @@
             <td style="color:${c};font-weight:700;font-size:0.8rem;">${r.passed?'✓ ΕΠΙΤΥΧΙΑ':'✗ ΑΠΟΤΥΧΙΑ'}</td>
             <td colspan="2"></td>
           </tr>`;
-        }).join('') || `<tr class="detail-row"><td colspan="6" style="padding-left:1.5rem;color:var(--text3);font-size:0.75rem;">Καμία προσπάθεια simulation</td></tr>`;
+        }).join('');
+
+        // Detail rows: SAEK A
+        const aRows = u.saekA.length === 0 ? '' : u.saekA.map((r,i) => {
+          const pct = r.pct ?? Math.round(r.score/r.total*100);
+          const c = pct>=80?'var(--green)':pct>=60?'var(--gold)':'var(--red)';
+          return `<tr class="detail-row">
+            <td style="padding-left:1.5rem;color:var(--text3);font-size:0.75rem;">${i===0?'🏆':''} ${formatDate(r.completedAt)}</td>
+            <td style="color:${c};font-weight:700;font-size:0.8rem;">${pct}%</td>
+            <td style="color:var(--green);font-size:0.8rem;">${r.score} σωστές</td>
+            <td style="color:var(--red);font-size:0.8rem;">${r.wrong??(r.total-r.score)} λάθος</td>
+            <td colspan="2"></td>
+          </tr>`;
+        }).join('');
+
+        // Detail rows: SAEK B
+        const bRows = u.saekB.length === 0 ? '' : u.saekB.map((r,i) => {
+          const pct = r.pct ?? Math.round(r.score/r.total*100);
+          const c = pct>=80?'var(--green)':pct>=60?'var(--gold)':'var(--red)';
+          return `<tr class="detail-row">
+            <td style="padding-left:1.5rem;color:var(--text3);font-size:0.75rem;">${i===0?'🏆':''} ${formatDate(r.completedAt)}</td>
+            <td style="color:${c};font-weight:700;font-size:0.8rem;">${pct}%</td>
+            <td style="color:var(--green);font-size:0.8rem;">${r.score} σωστές</td>
+            <td style="color:var(--red);font-size:0.8rem;">${r.wrong??(r.total-r.score)} λάθος</td>
+            <td colspan="2"></td>
+          </tr>`;
+        }).join('');
 
         const safeUid = uid.replace(/[^a-zA-Z0-9]/g,'_');
+
+        // Detail sections — εμφανίζεται μόνο ό,τι έχει δεδομένα
+        let detailSections = '';
+        if(u.quiz.length > 0)  detailSections += `<div class="detail-label">📚 Quiz 105h — ${u.quiz.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${qRows}</table>`;
+        if(u.sim.length > 0)   detailSections += `<div class="detail-label" style="margin-top:0.75rem;">🎯 Simulation — ${u.sim.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${sRows}</table>`;
+        if(u.saekA.length > 0) detailSections += `<div class="detail-label" style="margin-top:0.75rem;">🎓 ΣΑΕΚ Ομάδα Α — ${u.saekA.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${aRows}</table>`;
+        if(u.saekB.length > 0) detailSections += `<div class="detail-label" style="margin-top:0.75rem;">🎓 ΣΑΕΚ Ομάδα Β — ${u.saekB.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${bRows}</table>`;
+        if(!detailSections)    detailSections  = `<div style="color:var(--text3);font-size:0.75rem;">Καμία δραστηριότητα</div>`;
 
         return `
           <tr class="user-summary-row" onclick="toggleUser('${safeUid}')">
             <td><span class="expand-icon" id="icon-${safeUid}">▶</span> ${u.email}</td>
-            <td style="text-align:center;">${u.quiz.length}</td>
-            <td style="color:${qColor};font-weight:700;">${qBest!==null?qBest+'%':'—'} <span style="color:var(--text3);font-weight:400;font-size:0.75rem;">${qAvg!==null?'(μ.ο. '+qAvg+'%)':''}</span></td>
-            <td style="text-align:center;">${u.sim.length}</td>
-            <td style="color:${sColor};font-weight:700;">${sBest!==null?sBest.toFixed(1):' —'} <span style="color:var(--text3);font-weight:400;font-size:0.75rem;">${u.sim.length?'('+sPasses+'/'+u.sim.length+' pass)':''}</span></td>
-            <td style="text-align:center;color:var(--text3);font-size:0.8rem;">${u.quiz.length+u.sim.length}</td>
+            <td style="color:${qColor};font-weight:700;">${qBest!==null?qBest+'%':'—'} <span style="color:var(--text3);font-weight:400;font-size:0.72rem;">${u.quiz.length?'('+u.quiz.length+'x)':''}</span></td>
+            <td style="color:${sColor};font-weight:700;">${sBest!==null?sBest.toFixed(1):' —'} <span style="color:var(--text3);font-weight:400;font-size:0.72rem;">${u.sim.length?'('+u.sim.length+'x)':''}</span></td>
+            <td style="color:${aColor};font-weight:700;">${aBest!==null?aBest+'%':'—'} <span style="color:var(--text3);font-weight:400;font-size:0.72rem;">${u.saekA.length?'('+u.saekA.length+'x)':''}</span></td>
+            <td style="color:${bColor};font-weight:700;">${bBest!==null?bBest+'%':'—'} <span style="color:var(--text3);font-weight:400;font-size:0.72rem;">${u.saekB.length?'('+u.saekB.length+'x)':''}</span></td>
+            <td style="text-align:center;color:var(--text3);font-size:0.8rem;">${totalAtt}</td>
           </tr>
           <tr id="detail-${safeUid}" style="display:none;">
             <td colspan="6" style="padding:0;background:var(--bg);">
-              <div class="detail-section">
-                <div class="detail-label">📚 Quiz — ${u.quiz.length} προσπάθειες</div>
-                <table style="width:100%;border-collapse:collapse;">${qRows}</table>
-                <div class="detail-label" style="margin-top:0.75rem;">🎯 Simulation — ${u.sim.length} προσπάθειες</div>
-                <table style="width:100%;border-collapse:collapse;">${sRows}</table>
-              </div>
+              <div class="detail-section">${detailSections}</div>
             </td>
           </tr>`;
       }).join('');
@@ -455,7 +505,7 @@ tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
       <div class="section-hdr">
         <div>
           <div class="section-title">Στατιστικά Χρηστών</div>
-          <div class="section-sub">Κλικ σε χρήστη για λεπτομέρειες Quiz & Simulation</div>
+          <div class="section-sub">Κλικ σε χρήστη για λεπτομέρειες — Quiz 105h, Simulation, ΣΑΕΚ Α/Β</div>
         </div>
       </div>
       <div class="table-wrap">
@@ -463,10 +513,10 @@ tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
           <thead>
             <tr>
               <th>Χρήστης</th>
-              <th style="text-align:center;">Quiz<br>Προσπ.</th>
-              <th>Quiz<br>Καλύτερο</th>
-              <th style="text-align:center;">Sim<br>Προσπ.</th>
-              <th>Sim<br>Καλύτερος Μ.Ο.</th>
+              <th>Quiz 105h<br><span style="font-weight:400;text-transform:none;letter-spacing:0;">καλύτερο (x)</span></th>
+              <th>Simulation<br><span style="font-weight:400;text-transform:none;letter-spacing:0;">καλύτερο (x)</span></th>
+              <th>ΣΑΕΚ Ομ.Α<br><span style="font-weight:400;text-transform:none;letter-spacing:0;">καλύτερο (x)</span></th>
+              <th>ΣΑΕΚ Ομ.Β<br><span style="font-weight:400;text-transform:none;letter-spacing:0;">καλύτερο (x)</span></th>
               <th style="text-align:center;">Σύνολο</th>
             </tr>
           </thead>
