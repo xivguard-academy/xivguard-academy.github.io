@@ -535,7 +535,7 @@
       ctx.strokeStyle='#f85149'; ctx.lineWidth=lw; ctx.stroke();
     }
     ctx.beginPath(); ctx.arc(cx,cy,r,start,start+pct*Math.PI*2);
-    ctx.strokeStyle='#388bfd'; ctx.lineWidth=lw; ctx.stroke();
+    ctx.strokeStyle='#EF9F27'; ctx.lineWidth=lw; ctx.stroke();
     const p = Math.round(pct*100);
     ctx.fillStyle = p>=80?'#3fb950':p>=60?'#EF9F27':'#f85149';
     ctx.font='bold 16px Plus Jakarta Sans'; ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -574,11 +574,11 @@
     const lastX=pad.left+(n-1)*xStep;
     ctx.lineTo(lastX,pad.top+cH); ctx.lineTo(pad.left,pad.top+cH); ctx.closePath();
     const grad=ctx.createLinearGradient(0,pad.top,0,pad.top+cH);
-    grad.addColorStop(0,'rgba(56,139,253,0.18)'); grad.addColorStop(1,'rgba(56,139,253,0)');
+    grad.addColorStop(0,'rgba(239,159,39,0.18)'); grad.addColorStop(1,'rgba(239,159,39,0)');
     ctx.fillStyle=grad; ctx.fill();
     ctx.beginPath();
     pcts.forEach((p,i)=>{ const x=pad.left+i*xStep,y=pad.top+cH-(p/100)*cH; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
-    ctx.strokeStyle='#388bfd'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.stroke();
+    ctx.strokeStyle='#EF9F27'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.stroke();
     pcts.forEach((p,i)=>{
       const x=pad.left+i*xStep,y=pad.top+cH-(p/100)*cH,c=p>=80?'#3fb950':p>=60?'#EF9F27':'#f85149';
       ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fillStyle='#0b0d14'; ctx.fill();
@@ -592,7 +592,7 @@
   }
 
   // ── SAEK: Bar Chart ───────────────────────────────────────────────────────────
-  function drawSAEKBar(results, wrapperId){ drawBarChart(results, wrapperId, 'saek'); }
+  function drawSAEKBar(results, wrapperId){ drawBarChart(results, wrapperId, 'gold'); }
 
   window.discardProgress = async () => {
     if(!confirm('Να διαγραφεί η αποθηκευμένη πρόοδος;')) return;
@@ -681,6 +681,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 .mode-link--saek{background:#388bfd;color:#fff;}
 .mode-link--saek:hover{background:#5a9eff;}
 .s-saek-panel{ border-color: rgba(56,139,253,0.25); }
+.s-gold-panel{ border-color: rgba(239,159,39,0.25); }
 .saek-info-msg{
   background:rgba(56,139,253,0.06);border:1px solid rgba(56,139,253,0.15);
   border-radius:var(--radius-sm);padding:1.25rem;
@@ -1165,37 +1166,37 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
       <div class="dashboard-grid saek-stats-grid">
 
         <!-- ── ΟΜΑΔΑ Α PANEL ── -->
-        <div class="panel s-saek-panel">
+        <div class="panel s-gold-panel">
           <div class="panel-header">
             <div class="panel-header-left">
               <span class="panel-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#388bfd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
               </span>
               <span class="panel-title">Ομάδα Α — Στατιστικά</span>
-              <span class="panel-badge panel-badge--saek">124 ερωτήσεις</span>
+              <span class="panel-badge panel-badge--quiz">124 ερωτήσεις</span>
             </div>
-            <button onclick="checkAndGoSAEK('A')" class="mode-link mode-link--saek mode-link--compact" style="border:none;cursor:pointer;">▶ Έναρξη</button>
+            <button onclick="checkAndGoSAEK('A')" class="mode-link mode-link--quiz mode-link--compact" style="border:none;cursor:pointer;">▶ Έναρξη</button>
           </div>
 
           <!-- Stats cards -->
           <div class="stats-grid">
             <div class="stat-card">
-              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#388bfd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></div>
-              <div class="stat-val" id="qs-a-stat-best" style="color:#388bfd">—</div>
+              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></div>
+              <div class="stat-val" id="qs-a-stat-best" style="color:var(--gold)">—</div>
               <div class="stat-lbl">Καλύτερο</div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#388bfd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-              <div class="stat-val" id="qs-a-stat-avg" style="color:#388bfd">—</div>
+              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+              <div class="stat-val" id="qs-a-stat-avg" style="color:var(--gold)">—</div>
               <div class="stat-lbl">Μέσος Όρος</div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#388bfd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg></div>
-              <div class="stat-val" id="qs-a-stat-count" style="color:#388bfd">—</div>
+              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg></div>
+              <div class="stat-val" id="qs-a-stat-count" style="color:var(--gold)">—</div>
               <div class="stat-lbl">Προσπάθειες</div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#388bfd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
               <div class="stat-val" id="qs-a-stat-last">—</div>
               <div class="stat-lbl">Τελευταία</div>
             </div>
@@ -1210,7 +1211,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
               </div>
               <div class="donut-legend">
                 <div class="donut-title">Ομάδα Α</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#388bfd"></div>Σωστές: <strong id="qs-a-donut-ok">—</strong></div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Σωστές: <strong id="qs-a-donut-ok">—</strong></div>
                 <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div>Λάθος: <strong id="qs-a-donut-err">—</strong></div>
               </div>
             </div>
@@ -1241,37 +1242,37 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
         </div>
 
         <!-- ── ΟΜΑΔΑ Β PANEL ── -->
-        <div class="panel s-saek-panel">
+        <div class="panel s-gold-panel">
           <div class="panel-header">
             <div class="panel-header-left">
               <span class="panel-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#388bfd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
               </span>
               <span class="panel-title">Ομάδα Β — Στατιστικά</span>
-              <span class="panel-badge panel-badge--saek">139 ερωτήσεις</span>
+              <span class="panel-badge panel-badge--quiz">139 ερωτήσεις</span>
             </div>
-            <button onclick="checkAndGoSAEK('B')" class="mode-link mode-link--saek mode-link--compact" style="border:none;cursor:pointer;">▶ Έναρξη</button>
+            <button onclick="checkAndGoSAEK('B')" class="mode-link mode-link--quiz mode-link--compact" style="border:none;cursor:pointer;">▶ Έναρξη</button>
           </div>
 
           <!-- Stats cards -->
           <div class="stats-grid">
             <div class="stat-card">
-              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#388bfd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></div>
-              <div class="stat-val" id="qs-b-stat-best" style="color:#388bfd">—</div>
+              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></div>
+              <div class="stat-val" id="qs-b-stat-best" style="color:var(--gold)">—</div>
               <div class="stat-lbl">Καλύτερο</div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#388bfd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-              <div class="stat-val" id="qs-b-stat-avg" style="color:#388bfd">—</div>
+              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+              <div class="stat-val" id="qs-b-stat-avg" style="color:var(--gold)">—</div>
               <div class="stat-lbl">Μέσος Όρος</div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#388bfd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg></div>
-              <div class="stat-val" id="qs-b-stat-count" style="color:#388bfd">—</div>
+              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg></div>
+              <div class="stat-val" id="qs-b-stat-count" style="color:var(--gold)">—</div>
               <div class="stat-lbl">Προσπάθειες</div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#388bfd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
               <div class="stat-val" id="qs-b-stat-last">—</div>
               <div class="stat-lbl">Τελευταία</div>
             </div>
@@ -1286,7 +1287,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
               </div>
               <div class="donut-legend">
                 <div class="donut-title">Ομάδα Β</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#388bfd"></div>Σωστές: <strong id="qs-b-donut-ok">—</strong></div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Σωστές: <strong id="qs-b-donut-ok">—</strong></div>
                 <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div>Λάθος: <strong id="qs-b-donut-err">—</strong></div>
               </div>
             </div>
