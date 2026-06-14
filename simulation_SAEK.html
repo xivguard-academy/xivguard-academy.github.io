@@ -368,7 +368,7 @@ function render(){
   const el=document.getElementById('content');
   if(phase==='intro')el.innerHTML=renderIntro();
   else if(phase==='partA')el.innerHTML=renderPartA();
-  else if(phase==='partB')el.innerHTML=renderPartB();
+  else if(phase==='partB')renderPartB();
   else if(phase==='results')el.innerHTML=renderResults();
 }
 
