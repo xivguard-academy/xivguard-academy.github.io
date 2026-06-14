@@ -90,15 +90,16 @@
   // ── Load stats (quiz + simulation, grouped by user) ────────────────────────
   async function loadStats(){
     try {
-      const [quizSnap, simSnap, saekSnap] = await Promise.all([
-        getDocs(query(collection(db,'quizResults'),       orderBy('completedAt','desc'))),
-        getDocs(query(collection(db,'simulationResults'), orderBy('completedAt','desc'))),
-        getDocs(query(collection(db,'quizResultsSAEK'),   orderBy('completedAt','desc')))
+      const [quizSnap, simSnap, saekSnap, saekSimSnap] = await Promise.all([
+        getDocs(query(collection(db,'quizResults'),            orderBy('completedAt','desc'))),
+        getDocs(query(collection(db,'simulationResults'),      orderBy('completedAt','desc'))),
+        getDocs(query(collection(db,'quizResultsSAEK'),        orderBy('completedAt','desc'))),
+        getDocs(query(collection(db,'simulationResultsSAEK'),  orderBy('completedAt','desc')))
       ]);
 
       // Build per-user map
-      const userMap = {}; // uid → { email, quiz:[], sim:[], saekA:[], saekB:[] }
-      const emptyUser = (email) => ({ email, quiz:[], sim:[], saekA:[], saekB:[] });
+      const userMap = {}; // uid → { email, quiz:[], sim:[], saekA:[], saekB:[], saekSim:[] }
+      const emptyUser = (email) => ({ email, quiz:[], sim:[], saekA:[], saekB:[], saekSim:[] });
 
       quizSnap.forEach(d => {
         const r = d.data();
@@ -119,18 +120,24 @@
         else if(r.group === 'B') userMap[r.uid].saekB.push(r);
       });
 
+      saekSimSnap.forEach(d => {
+        const r = d.data();
+        if(!userMap[r.uid]) userMap[r.uid] = emptyUser(r.email || r.uid);
+        userMap[r.uid].saekSim.push(r);
+      });
+
       const users = Object.entries(userMap);
-      const totalAttempts = users.reduce((s,[,u])=>s+u.quiz.length+u.sim.length+u.saekA.length+u.saekB.length,0);
+      const totalAttempts = users.reduce((s,[,u])=>s+u.quiz.length+u.sim.length+u.saekA.length+u.saekB.length+u.saekSim.length,0);
       document.getElementById('badge-stats').textContent = users.length || '';
 
       const tbody = document.getElementById('stats-tbody');
       if(users.length === 0){
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
         return;
       }
 
       // Sort: most activity first
-      users.sort(([,a],[,b]) => (b.quiz.length+b.sim.length+b.saekA.length+b.saekB.length) - (a.quiz.length+a.sim.length+a.saekA.length+a.saekB.length));
+      users.sort(([,a],[,b]) => (b.quiz.length+b.sim.length+b.saekA.length+b.saekB.length+b.saekSim.length) - (a.quiz.length+a.sim.length+a.saekA.length+a.saekB.length+a.saekSim.length));
 
       tbody.innerHTML = users.map(([uid, u], idx) => {
         // Quiz 105h summary
@@ -155,7 +162,13 @@
         const bBest  = bPcts.length ? Math.max(...bPcts) : null;
         const bColor = bBest===null?'var(--text3)':bBest>=80?'var(--green)':bBest>=60?'var(--gold)':'var(--red)';
 
-        const totalAtt = u.quiz.length + u.sim.length + u.saekA.length + u.saekB.length;
+        // SAEK Simulation summary
+        const ssScores = u.saekSim.map(r => r.partAScore ?? 0);
+        const ssBest   = ssScores.length ? Math.max(...ssScores) : null;
+        const ssPasses = u.saekSim.filter(r => r.passedA).length;
+        const ssColor  = ssBest===null?'var(--text3)':ssBest>=80?'var(--green)':ssBest>=50?'var(--blue)':'var(--red)';
+
+        const totalAtt = u.quiz.length + u.sim.length + u.saekA.length + u.saekB.length + u.saekSim.length;
 
         // Detail rows: quiz 105h
         const qRows = u.quiz.length === 0 ? '' : u.quiz.map((r,i) => {
@@ -205,31 +218,45 @@
             <td style="color:${c};font-weight:700;font-size:0.8rem;">${pct}%</td>
             <td style="color:var(--green);font-size:0.8rem;">${r.score} σωστές</td>
             <td style="color:var(--red);font-size:0.8rem;">${r.wrong??(r.total-r.score)} λάθος</td>
-            <td colspan="2"></td>
+            <td colspan="3"></td>
           </tr>`;
         }).join('');
 
-        const safeUid = uid.replace(/[^a-zA-Z0-9]/g,'_');
+        // Detail rows: SAEK Simulation
+        const ssRows = u.saekSim.length === 0 ? '' : u.saekSim.map((r,i) => {
+          const sc = r.partAScore ?? 0;
+          const pb = r.partBScore ?? 0;
+          const c  = sc>=80?'var(--green)':sc>=50?'#58a6ff':'var(--red)';
+          return `<tr class="detail-row">
+            <td style="padding-left:1.5rem;color:var(--text3);font-size:0.75rem;">${i===0?'🎯':''} ${formatDate(r.completedAt)}</td>
+            <td style="font-size:0.8rem;">Α: ${sc}/100 · Β: ${pb}/20</td>
+            <td style="color:${c};font-weight:700;font-size:0.8rem;">${sc}/100</td>
+            <td style="color:${r.passedA?'var(--green)':'var(--red)'};font-weight:700;font-size:0.8rem;">${r.passedA?'✓ ΕΠΙΤΥΧΙΑ':'✗ ΑΠΟΤΥΧΙΑ'}</td>
+            <td colspan="3"></td>
+          </tr>`;
+        }).join('');
 
         // Detail sections — εμφανίζεται μόνο ό,τι έχει δεδομένα
         let detailSections = '';
-        if(u.quiz.length > 0)  detailSections += `<div class="detail-label">📚 Quiz 105h — ${u.quiz.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${qRows}</table>`;
-        if(u.sim.length > 0)   detailSections += `<div class="detail-label" style="margin-top:0.75rem;">🎯 Simulation — ${u.sim.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${sRows}</table>`;
-        if(u.saekA.length > 0) detailSections += `<div class="detail-label" style="margin-top:0.75rem;">🎓 ΣΑΕΚ Ομάδα Α — ${u.saekA.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${aRows}</table>`;
-        if(u.saekB.length > 0) detailSections += `<div class="detail-label" style="margin-top:0.75rem;">🎓 ΣΑΕΚ Ομάδα Β — ${u.saekB.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${bRows}</table>`;
-        if(!detailSections)    detailSections  = `<div style="color:var(--text3);font-size:0.75rem;">Καμία δραστηριότητα</div>`;
+        if(u.quiz.length > 0)    detailSections += `<div class="detail-label">📚 Quiz 105h — ${u.quiz.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${qRows}</table>`;
+        if(u.sim.length > 0)     detailSections += `<div class="detail-label" style="margin-top:0.75rem;">🎯 Simulation — ${u.sim.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${sRows}</table>`;
+        if(u.saekA.length > 0)   detailSections += `<div class="detail-label" style="margin-top:0.75rem;">🎓 ΣΑΕΚ Ομάδα Α — ${u.saekA.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${aRows}</table>`;
+        if(u.saekB.length > 0)   detailSections += `<div class="detail-label" style="margin-top:0.75rem;">🎓 ΣΑΕΚ Ομάδα Β — ${u.saekB.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${bRows}</table>`;
+        if(u.saekSim.length > 0) detailSections += `<div class="detail-label" style="margin-top:0.75rem;">🎯 ΣΑΕΚ Simulation — ${u.saekSim.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${ssRows}</table>`;
+        if(!detailSections)      detailSections  = `<div style="color:var(--text3);font-size:0.75rem;">Καμία δραστηριότητα</div>`;
 
         return `
           <tr class="user-summary-row" onclick="toggleUser('${safeUid}')">
             <td><span class="expand-icon" id="icon-${safeUid}">▶</span> ${u.email}</td>
             <td style="color:${qColor};font-weight:700;">${qBest!==null?qBest+'%':'—'} <span style="color:var(--text3);font-weight:400;font-size:0.72rem;">${u.quiz.length?'('+u.quiz.length+'x)':''}</span></td>
-            <td style="color:${sColor};font-weight:700;">${sBest!==null?sBest.toFixed(1):' —'} <span style="color:var(--text3);font-weight:400;font-size:0.72rem;">${u.sim.length?'('+u.sim.length+'x)':''}</span></td>
+            <td style="color:${sColor};font-weight:700;">${sBest!==null?sBest.toFixed(1):'—'} <span style="color:var(--text3);font-weight:400;font-size:0.72rem;">${u.sim.length?'('+u.sim.length+'x)':''}</span></td>
             <td style="color:${aColor};font-weight:700;">${aBest!==null?aBest+'%':'—'} <span style="color:var(--text3);font-weight:400;font-size:0.72rem;">${u.saekA.length?'('+u.saekA.length+'x)':''}</span></td>
             <td style="color:${bColor};font-weight:700;">${bBest!==null?bBest+'%':'—'} <span style="color:var(--text3);font-weight:400;font-size:0.72rem;">${u.saekB.length?'('+u.saekB.length+'x)':''}</span></td>
+            <td style="color:${ssColor};font-weight:700;">${ssBest!==null?ssBest+'/100':'—'} <span style="color:var(--text3);font-weight:400;font-size:0.72rem;">${u.saekSim.length?'('+u.saekSim.length+'x)':''}</span></td>
             <td style="text-align:center;color:var(--text3);font-size:0.8rem;">${totalAtt}</td>
           </tr>
           <tr id="detail-${safeUid}" style="display:none;">
-            <td colspan="6" style="padding:0;background:var(--bg);">
+            <td colspan="7" style="padding:0;background:var(--bg);">
               <div class="detail-section">${detailSections}</div>
             </td>
           </tr>`;
@@ -517,10 +544,11 @@ tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
               <th>Simulation<br><span style="font-weight:400;text-transform:none;letter-spacing:0;">καλύτερο (x)</span></th>
               <th>ΣΑΕΚ Ομ.Α<br><span style="font-weight:400;text-transform:none;letter-spacing:0;">καλύτερο (x)</span></th>
               <th>ΣΑΕΚ Ομ.Β<br><span style="font-weight:400;text-transform:none;letter-spacing:0;">καλύτερο (x)</span></th>
+              <th>ΣΑΕΚ Sim<br><span style="font-weight:400;text-transform:none;letter-spacing:0;">καλύτερο (x)</span></th>
               <th style="text-align:center;">Σύνολο</th>
             </tr>
           </thead>
-          <tbody id="stats-tbody"><tr><td colspan="6" class="empty-msg">Φόρτωση...</td></tr></tbody>
+          <tbody id="stats-tbody"><tr><td colspan="7" class="empty-msg">Φόρτωση...</td></tr></tbody>
         </table>
       </div>
     </div>
