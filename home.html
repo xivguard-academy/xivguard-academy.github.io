@@ -79,7 +79,7 @@
 
     const loads = [];
     if(show105h) loads.push(loadProgress(user,db), loadQuizResults(user,db), loadSimResults(user,db));
-    if(showSAEK) loads.push(loadSAEKProgress(user,db), loadSAEKResults(user,db), loadSAEKQuizStats(user,db));
+    if(showSAEK) loads.push(loadSAEKProgress(user,db), loadSAEKResults(user,db), loadSAEKQuizStats(user,db), loadSAEKSimResults(user,db));
     await Promise.all(loads);
   });
 
@@ -470,6 +470,59 @@
     } catch(e){ console.error('SAEK quiz stats error:',e); }
   }
 
+  async function loadSAEKSimResults(user, db){
+    try {
+      const snap = await getDocs(query(
+        collection(db,'simulationResultsSAEK'),
+        where('uid','==',user.uid),
+        orderBy('completedAt','desc'),
+        limit(20)
+      ));
+      const results = [];
+      snap.forEach(d => results.push(d.data()));
+      if(results.length === 0){
+        ['saek-sim-best','saek-sim-avg','saek-sim-count','saek-sim-last'].forEach(id => {
+          const el = document.getElementById(id);
+          if(el) el.textContent = id==='saek-sim-count'?'0':'—';
+        });
+        const tbody = document.getElementById('saek-sim-history-tbody');
+        if(tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#636880;padding:1.5rem;">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
+        return;
+      }
+      const scores = results.map(r => r.partAScore ?? 0);
+      const best   = Math.max(...scores);
+      const avg    = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+      const last   = scores[0];
+      const setEl  = (id, val) => { const e=document.getElementById(id); if(e) e.textContent=val; };
+      setEl('saek-sim-best',  best+'/100');
+      setEl('saek-sim-avg',   avg+'/100');
+      setEl('saek-sim-count', results.length);
+      const lastEl = document.getElementById('saek-sim-last');
+      if(lastEl){ lastEl.textContent=last+'/100'; lastEl.style.color=last>=80?'#3fb950':last>=50?'#58a6ff':'#f85149'; }
+      // Update card sub-text
+      const cardSub = document.getElementById('saek-sim-card-sub');
+      const cardScore = document.getElementById('saek-sim-card-score');
+      if(cardSub)   cardSub.textContent = results.length + (results.length===1?' προσπάθεια':' προσπάθειες');
+      if(cardScore){ cardScore.style.display='block'; cardScore.innerHTML='<span style="font-size:0.72rem;font-weight:700;color:#58a6ff;">Τελευταίο: '+last+'/100</span>'; }
+      // History table
+      const tbody = document.getElementById('saek-sim-history-tbody');
+      if(tbody) tbody.innerHTML = results.slice(0,8).map((r,i) => {
+        const sc   = r.partAScore ?? 0;
+        const pb   = r.partBScore ?? 0;
+        const col  = sc>=80?'#3fb950':sc>=50?'#58a6ff':'#f85149';
+        const passed = r.passedA ?? sc>=50;
+        const date = r.completedAt ? r.completedAt.toDate().toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+        const medal = i===0?'🏆 ':'';
+        return `<tr>
+          <td>${medal}${date}</td>
+          <td style="color:${col};font-weight:700;">${sc}</td>
+          <td>${pb}</td>
+          <td style="color:${passed?'#3fb950':'#f85149'};font-weight:700;">${passed?'✓ Επιτυχία':'✗ Αποτυχία'}</td>
+        </tr>`;
+      }).join('');
+    } catch(e){ console.error('SAEK sim results error:',e); }
+  }
+
   function renderSAEKGroupStats(results, grp){
     const emptyRow = '<tr><td colspan="4" style="text-align:center;color:#636880;padding:1.5rem;">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
     if(results.length === 0){
@@ -685,7 +738,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 .saek-info-msg{
   background:rgba(56,139,253,0.06);border:1px solid rgba(56,139,253,0.15);
   border-radius:var(--radius-sm);padding:1.25rem;
-  display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;
   margin-top:0.5rem;
 }
 .saek-group-card{
@@ -729,7 +782,7 @@ canvas.line-canvas{display:block;width:100%;height:130px;}
 .bar-fill-gold{background:#EF9F27;}
 .bar-fill-blue{background:#58a6ff;}
 .bar-fill-saek{background:#388bfd;}
-.saek-stats-grid{margin-top:1.5rem;}
+.saek-stats-grid{margin-top:1.5rem;grid-template-columns:1fr 1fr 1fr;}
 .bar-lbl{font-size:0.6rem;color:var(--text3);white-space:nowrap;}
 .bar-count{font-size:0.6rem;font-weight:700;color:var(--text2);min-height:14px;}
 
@@ -1153,6 +1206,12 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
             <div class="sg-count">139 ερωτήσεις</div>
             <div id="saek-result-B" style="display:none;margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--border2);"></div>
           </div>
+          <div class="saek-group-card" onclick="window.location.href='simulation_SAEK.html'" style="border-color:rgba(88,166,255,0.25);background:rgba(88,166,255,0.04);">
+            <div class="sg-lbl" style="color:#58a6ff;">Τεστ</div>
+            <div class="sg-name" style="color:#58a6ff;font-size:1.1rem;">Προσομοίωση</div>
+            <div class="sg-count" id="saek-sim-card-sub">12 θεωρητικές + 2 σενάρια</div>
+            <div id="saek-sim-card-score" style="display:none;margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--border2);"></div>
+          </div>
         </div>
 
         <div style="margin-top:0.875rem;font-size:0.78rem;color:var(--text3);line-height:1.6;">
@@ -1318,6 +1377,53 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
         </div>
 
       </div><!-- /saek-stats-grid -->
+
+      <!-- ── SAEK SIMULATION PANEL ── -->
+      <div class="panel s-saek-panel" style="margin-top:1.5rem;">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <span class="panel-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            </span>
+            <span class="panel-title">Τεστ Προσομοίωσης — Στατιστικά</span>
+            <span class="panel-badge" style="background:rgba(88,166,255,0.12);color:#58a6ff;border:1px solid rgba(88,166,255,0.3);">ΣΑΕΚ</span>
+          </div>
+          <a href="simulation_SAEK.html" class="mode-link mode-link--sim mode-link--compact" style="text-decoration:none;">▶ Έναρξη</a>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></div>
+            <div class="stat-val" id="saek-sim-best" style="color:#58a6ff">—</div>
+            <div class="stat-lbl">Καλύτερο</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+            <div class="stat-val" id="saek-sim-avg" style="color:#58a6ff">—</div>
+            <div class="stat-lbl">Μέσος Όρος</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg></div>
+            <div class="stat-val" id="saek-sim-count" style="color:#58a6ff">—</div>
+            <div class="stat-lbl">Προσπάθειες</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+            <div class="stat-val" id="saek-sim-last">—</div>
+            <div class="stat-lbl">Τελευταίο</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 15 15"/></svg>Ιστορικό Προσομοιώσεων</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Ημερομηνία</th><th>Μέρος Α (/100)</th><th>Μέρος Β (/20)</th><th>Αποτέλεσμα</th></tr></thead>
+              <tbody id="saek-sim-history-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /saek-sim-panel -->
 
     </div><!-- /section-saek -->
 
