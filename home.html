@@ -1376,54 +1376,54 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
           </div>
         </div>
 
+        <!-- ── SIMULATION SAEK PANEL ── -->
+        <div class="panel s-saek-panel">
+          <div class="panel-header">
+            <div class="panel-header-left">
+              <span class="panel-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+              </span>
+              <span class="panel-title">Τεστ Προσομοίωσης — Στατιστικά</span>
+              <span class="panel-badge" style="background:rgba(88,166,255,0.12);color:#58a6ff;border:1px solid rgba(88,166,255,0.3);">ΣΑΕΚ</span>
+            </div>
+            <a href="simulation_SAEK.html" class="mode-link mode-link--sim mode-link--compact" style="text-decoration:none;">▶ Έναρξη</a>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></div>
+              <div class="stat-val" id="saek-sim-best" style="color:#58a6ff">—</div>
+              <div class="stat-lbl">Καλύτερο</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+              <div class="stat-val" id="saek-sim-avg" style="color:#58a6ff">—</div>
+              <div class="stat-lbl">Μέσος Όρος</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg></div>
+              <div class="stat-val" id="saek-sim-count" style="color:#58a6ff">—</div>
+              <div class="stat-lbl">Προσπάθειες</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+              <div class="stat-val" id="saek-sim-last">—</div>
+              <div class="stat-lbl">Τελευταίο</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="section-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 15 15"/></svg>Ιστορικό Προσομοιώσεων</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Ημερομηνία</th><th>Μέρος Α (/100)</th><th>Μέρος Β (/20)</th><th>Αποτέλεσμα</th></tr></thead>
+                <tbody id="saek-sim-history-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div><!-- /saek-sim-panel -->
+
       </div><!-- /saek-stats-grid -->
-
-      <!-- ── SAEK SIMULATION PANEL ── -->
-      <div class="panel s-saek-panel" style="margin-top:1.5rem;">
-        <div class="panel-header">
-          <div class="panel-header-left">
-            <span class="panel-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-            </span>
-            <span class="panel-title">Τεστ Προσομοίωσης — Στατιστικά</span>
-            <span class="panel-badge" style="background:rgba(88,166,255,0.12);color:#58a6ff;border:1px solid rgba(88,166,255,0.3);">ΣΑΕΚ</span>
-          </div>
-          <a href="simulation_SAEK.html" class="mode-link mode-link--sim mode-link--compact" style="text-decoration:none;">▶ Έναρξη</a>
-        </div>
-
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg></div>
-            <div class="stat-val" id="saek-sim-best" style="color:#58a6ff">—</div>
-            <div class="stat-lbl">Καλύτερο</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-            <div class="stat-val" id="saek-sim-avg" style="color:#58a6ff">—</div>
-            <div class="stat-lbl">Μέσος Όρος</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg></div>
-            <div class="stat-val" id="saek-sim-count" style="color:#58a6ff">—</div>
-            <div class="stat-lbl">Προσπάθειες</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
-            <div class="stat-val" id="saek-sim-last">—</div>
-            <div class="stat-lbl">Τελευταίο</div>
-          </div>
-        </div>
-
-        <div>
-          <div class="section-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 15 15"/></svg>Ιστορικό Προσομοιώσεων</div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Ημερομηνία</th><th>Μέρος Α (/100)</th><th>Μέρος Β (/20)</th><th>Αποτέλεσμα</th></tr></thead>
-              <tbody id="saek-sim-history-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div><!-- /saek-sim-panel -->
 
     </div><!-- /section-saek -->
 
