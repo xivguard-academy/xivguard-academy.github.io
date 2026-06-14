@@ -237,6 +237,7 @@
         }).join('');
 
         // Detail sections — εμφανίζεται μόνο ό,τι έχει δεδομένα
+        const safeUid = uid.replace(/[^a-zA-Z0-9]/g,'_');
         let detailSections = '';
         if(u.quiz.length > 0)    detailSections += `<div class="detail-label">📚 Quiz 105h — ${u.quiz.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${qRows}</table>`;
         if(u.sim.length > 0)     detailSections += `<div class="detail-label" style="margin-top:0.75rem;">🎯 Simulation — ${u.sim.length} προσπάθειες</div><table style="width:100%;border-collapse:collapse;">${sRows}</table>`;
