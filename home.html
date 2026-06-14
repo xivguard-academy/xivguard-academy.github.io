@@ -470,7 +470,21 @@
     } catch(e){ console.error('SAEK quiz stats error:',e); }
   }
 
+  function drawSAEKSimBar(results){ drawBarChart(results, 'saek-sim-bar-wrap', 'blue'); }
+
   async function loadSAEKSimResults(user, db){
+    const emptyRow = '<tr><td colspan="4" style="text-align:center;color:#636880;padding:1.5rem;">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
+    // Αρχικοποίηση placeholder πάντα πρώτα
+    ['saek-sim-best','saek-sim-avg','saek-sim-count','saek-sim-last'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.textContent = id==='saek-sim-count'?'0':'—';
+    });
+    drawSAEKSimDonut(0, 0, true, 'saek-sim-donut-canvas', 'saek-sim-donut-ok', 'saek-sim-donut-err');
+    drawSAEKSimLine([], [], 'saek-sim-line-canvas');
+    drawSAEKSimBar([]);
+    const tbody = document.getElementById('saek-sim-history-tbody');
+    if(tbody) tbody.innerHTML = emptyRow;
+
     try {
       const snap = await getDocs(query(
         collection(db,'simulationResultsSAEK'),
@@ -480,19 +494,8 @@
       ));
       const results = [];
       snap.forEach(d => results.push(d.data()));
-      const emptyRow = '<tr><td colspan="4" style="text-align:center;color:#636880;padding:1.5rem;">Δεν υπάρχουν αποτελέσματα ακόμα</td></tr>';
-      if(results.length === 0){
-        ['saek-sim-best','saek-sim-avg','saek-sim-count','saek-sim-last'].forEach(id => {
-          const el = document.getElementById(id);
-          if(el) el.textContent = id==='saek-sim-count'?'0':'—';
-        });
-        drawSAEKSimDonut(0, 0, true, 'saek-sim-donut-canvas', 'saek-sim-donut-ok', 'saek-sim-donut-err');
-        drawSAEKSimLine([], [], 'saek-sim-line-canvas');
-        drawSAEKBar([], 'saek-sim-bar-wrap');
-        const tbody = document.getElementById('saek-sim-history-tbody');
-        if(tbody) tbody.innerHTML = emptyRow;
-        return;
-      }
+      if(results.length === 0) return;
+
       const scores = results.map(r => r.partAScore ?? 0);
       const best   = Math.max(...scores);
       const avg    = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
@@ -512,9 +515,8 @@
       const lRes = results[0];
       drawSAEKSimDonut(lRes.partACorrect??0, (12-(lRes.partACorrect??0)), false, 'saek-sim-donut-canvas', 'saek-sim-donut-ok', 'saek-sim-donut-err');
       drawSAEKSimLine([...scores].reverse(), [...results].reverse(), 'saek-sim-line-canvas');
-      drawSAEKBar(results, 'saek-sim-bar-wrap');
+      drawSAEKSimBar(results);
       // History table
-      const tbody = document.getElementById('saek-sim-history-tbody');
       if(tbody) tbody.innerHTML = results.slice(0,8).map((r,i) => {
         const sc   = r.partAScore ?? 0;
         const pb   = r.partBScore ?? 0;
