@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>XIV Guard Academy — Τράπεζα Θεμάτων | Άδεια Εργασίας ΙΑΑ (181 ερωτήσεις)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,500;0,700;1,400&family=Lora:wght@600;700&display=swap" rel="stylesheet">
 
 <!-- ═══════════════════════════════════════════════
      FIREBASE CONFIG — αντικατάστησε με τα δικά σου
@@ -162,7 +162,7 @@
   font-size:0.62rem;font-weight:600;
   letter-spacing:0.06em;color:var(--text3);
   z-index:500;pointer-events:none;
-  font-family:'Plus Jakarta Sans',Inter,sans-serif;
+  font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;
   line-height:1.5;text-align:right;
   opacity:0.6;
 }
@@ -178,7 +178,7 @@
   --green:#3fb950; --red:#f85149;
   --radius:12px; --radius-sm:8px;
 }
-body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+body{font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;font-size:16px;font-weight:400;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
 
 /* ─── Header ───────────────────────────────────────────────────────────── */
 .header{
@@ -233,13 +233,13 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);c
 .q-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;box-shadow:0 4px 20px rgba(0,0,0,0.35);animation:fadeUp 0.25s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .q-num{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--gold);margin-bottom:0.6rem;}
-.q-text{font-family:'Lora',Georgia,serif;font-size:1.05rem;font-weight:600;color:var(--text);line-height:1.7;}
+.q-text{font-size:16px;font-weight:500;color:var(--text);line-height:1.65;letter-spacing:0.015em;}
 .options{display:flex;flex-direction:column;gap:0.625rem;margin-top:1.5rem;}
 .opt{display:flex;align-items:flex-start;gap:0.875rem;padding:0.8rem 1rem;border:1.5px solid var(--border2);border-radius:10px;background:var(--bg);cursor:pointer;text-align:left;width:100%;transition:border-color 0.15s,background 0.15s;font-family:inherit;}
 .opt:hover:not(:disabled){border-color:var(--gold);background:rgba(239,159,39,0.05);}
 .opt:disabled{cursor:default;}
 .opt-letter{width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--text3);flex-shrink:0;margin-top:1px;}
-.opt-text{font-size:0.92rem;color:var(--text2);line-height:1.55;}
+.opt-text{font-size:15px;font-weight:400;color:var(--text2);line-height:1.65;letter-spacing:0.012em;}
 .opt.correct{border-color:var(--green);background:rgba(63,185,80,0.07);}
 .opt.correct .opt-letter{background:var(--green);border-color:var(--green);color:#0b0d14;}
 .opt.correct .opt-text{color:var(--green);}
@@ -613,7 +613,7 @@ function render(){
           <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin-bottom:0.65rem;">
             ${pq.id} — Σενάριο
           </div>
-          <p style="font-size:0.92rem;line-height:1.75;color:var(--text);margin:0;">${pq.question}</p>
+          <p style="font-size:16px;font-weight:500;line-height:1.65;letter-spacing:0.015em;color:var(--text);margin:0;">${pq.question}</p>
         </div>
 
         ${!practicalRevealed ? `
