@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>XIV Guard Academy — Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,500;0,700;1,400&family=Lora:wght@600;700&display=swap" rel="stylesheet">
 
 <script type="module">
   import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -279,7 +279,7 @@
     ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
     ctx.strokeStyle='#252838'; ctx.lineWidth=lw; ctx.stroke();
     if(total <= 1 && score === 0 && wrong === 0){
-      ctx.fillStyle='#636880'; ctx.font='11px Plus Jakarta Sans';
+      ctx.fillStyle='#636880'; ctx.font='11px Atkinson Hyperlegible Next';
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('Δεν υπάρχουν', cx, cy-8);
       ctx.fillText('δεδομένα', cx, cy+10); return;
@@ -294,9 +294,9 @@
     ctx.strokeStyle='#3fb950'; ctx.lineWidth=lw; ctx.stroke();
     const p = Math.round(pct*100);
     ctx.fillStyle = p>=80?'#3fb950':p>=60?'#EF9F27':'#f85149';
-    ctx.font='bold 16px Plus Jakarta Sans'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='bold 16px Atkinson Hyperlegible Next'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(p+'%', cx, cy-8);
-    ctx.fillStyle='#636880'; ctx.font='9px Plus Jakarta Sans';
+    ctx.fillStyle='#636880'; ctx.font='9px Atkinson Hyperlegible Next';
     ctx.fillText('τελευταία', cx, cy+9);
     document.getElementById('q-donut-a').textContent = score;
     document.getElementById('q-donut-b').textContent = wrong;
@@ -312,7 +312,7 @@
     ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
     ctx.strokeStyle='#252838'; ctx.lineWidth=lw; ctx.stroke();
     if(partA === 0 && partB === 0){
-      ctx.fillStyle='#636880'; ctx.font='11px Plus Jakarta Sans';
+      ctx.fillStyle='#636880'; ctx.font='11px Atkinson Hyperlegible Next';
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('Δεν υπάρχουν', cx, cy-8);
       ctx.fillText('δεδομένα', cx, cy+10); return;
@@ -333,10 +333,10 @@
     }
     const avg = ((partA+partB)/2).toFixed(1);
     const color = parseFloat(avg)>=10?'#3fb950':'#f85149';
-    ctx.fillStyle=color; ctx.font='bold 16px Plus Jakarta Sans';
+    ctx.fillStyle=color; ctx.font='bold 16px Atkinson Hyperlegible Next';
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(avg, cx, cy-8);
-    ctx.fillStyle='#636880'; ctx.font='9px Plus Jakarta Sans';
+    ctx.fillStyle='#636880'; ctx.font='9px Atkinson Hyperlegible Next';
     ctx.fillText('μ.ο. /20', cx, cy+9);
     document.getElementById('s-donut-a').textContent = partA+'/20';
     document.getElementById('s-donut-b').textContent = partB+'/20';
@@ -358,11 +358,11 @@
       ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(pad.left+cW,y);
       ctx.strokeStyle=v===80?'rgba(63,185,80,0.25)':'rgba(255,255,255,0.05)';
       ctx.lineWidth=1; ctx.setLineDash(v===80?[4,4]:[]); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle='#636880'; ctx.font='9px Plus Jakarta Sans';
+      ctx.fillStyle='#636880'; ctx.font='9px Atkinson Hyperlegible Next';
       ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(v+'%',pad.left-4,y);
     });
     const y80=pad.top+cH-0.8*cH;
-    ctx.fillStyle='rgba(63,185,80,0.5)'; ctx.font='8px Plus Jakarta Sans';
+    ctx.fillStyle='rgba(63,185,80,0.5)'; ctx.font='8px Atkinson Hyperlegible Next';
     ctx.textAlign='left'; ctx.fillText('80%',pad.left+4,y80-6);
     ctx.beginPath();
     pcts.forEach((p,i)=>{ const x=pad.left+i*xStep,y=pad.top+cH-(p/100)*cH; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
@@ -381,7 +381,7 @@
       if(results[i]&&results[i].completedAt){
         const d=results[i].completedAt.toDate();
         const lbl=(n<=6)?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):(i===0||i===n-1?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):'');
-        if(lbl){ ctx.fillStyle='#636880'; ctx.font='8px Plus Jakarta Sans'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(lbl,x,pad.top+cH+4); }
+        if(lbl){ ctx.fillStyle='#636880'; ctx.font='8px Atkinson Hyperlegible Next'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(lbl,x,pad.top+cH+4); }
       }
     });
   }
@@ -402,11 +402,11 @@
       ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(pad.left+cW,y);
       ctx.strokeStyle=v===10?'rgba(63,185,80,0.25)':'rgba(255,255,255,0.05)';
       ctx.lineWidth=1; ctx.setLineDash(v===10?[4,4]:[]); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle='#636880'; ctx.font='9px Plus Jakarta Sans';
+      ctx.fillStyle='#636880'; ctx.font='9px Atkinson Hyperlegible Next';
       ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(v,pad.left-4,y);
     });
     const y10=pad.top+cH-0.5*cH;
-    ctx.fillStyle='rgba(63,185,80,0.5)'; ctx.font='8px Plus Jakarta Sans';
+    ctx.fillStyle='rgba(63,185,80,0.5)'; ctx.font='8px Atkinson Hyperlegible Next';
     ctx.textAlign='left'; ctx.fillText('10 βάση',pad.left+4,y10-6);
     ctx.beginPath();
     avgs.forEach((a,i)=>{ const x=pad.left+i*xStep,y=pad.top+cH-(a/20)*cH; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
@@ -425,7 +425,7 @@
       if(results[i]&&results[i].completedAt){
         const d=results[i].completedAt.toDate();
         const lbl=(n<=6)?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):(i===0||i===n-1?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):'');
-        if(lbl){ ctx.fillStyle='#636880'; ctx.font='8px Plus Jakarta Sans'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(lbl,x,pad.top+cH+4); }
+        if(lbl){ ctx.fillStyle='#636880'; ctx.font='8px Atkinson Hyperlegible Next'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(lbl,x,pad.top+cH+4); }
       }
     });
   }
@@ -543,7 +543,7 @@
     ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
     ctx.strokeStyle='#252838'; ctx.lineWidth=lw; ctx.stroke();
     if(empty){
-      ctx.fillStyle='#636880'; ctx.font='11px Plus Jakarta Sans';
+      ctx.fillStyle='#636880'; ctx.font='11px Atkinson Hyperlegible Next';
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('Δεν υπάρχουν', cx, cy-8); ctx.fillText('δεδομένα', cx, cy+10); return;
     }
@@ -559,7 +559,7 @@
       ctx.beginPath(); ctx.arc(cx,cy,r,s2,s2+(wrong/total)*Math.PI*2);
       ctx.strokeStyle='#f85149'; ctx.lineWidth=lw; ctx.stroke();
     }
-    ctx.fillStyle='#e8eaf2'; ctx.font='bold 14px Plus Jakarta Sans';
+    ctx.fillStyle='#e8eaf2'; ctx.font='bold 14px Atkinson Hyperlegible Next';
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(correct+'/12', cx, cy);
     if(document.getElementById(okId))  document.getElementById(okId).textContent  = correct;
@@ -581,11 +581,11 @@
       ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(pad.left+cW,y);
       ctx.strokeStyle=v===50?'rgba(88,166,255,0.3)':'rgba(255,255,255,0.05)';
       ctx.lineWidth=1; ctx.setLineDash(v===50?[4,4]:[]); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle='#636880'; ctx.font='9px Plus Jakarta Sans';
+      ctx.fillStyle='#636880'; ctx.font='9px Atkinson Hyperlegible Next';
       ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(v,pad.left-4,y);
     });
     const y50=pad.top+cH-0.5*cH;
-    ctx.fillStyle='rgba(88,166,255,0.6)'; ctx.font='8px Plus Jakarta Sans';
+    ctx.fillStyle='rgba(88,166,255,0.6)'; ctx.font='8px Atkinson Hyperlegible Next';
     ctx.textAlign='left'; ctx.fillText('50',pad.left+4,y50-6);
     ctx.beginPath();
     scores.forEach((p,i)=>{ const x=pad.left+i*xStep,y=pad.top+cH-(p/100)*cH; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
@@ -605,7 +605,7 @@
       if(results[i]&&results[i].completedAt){
         const d=results[i].completedAt.toDate();
         const lbl=(n<=6)?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):(i===0||i===n-1?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):'');
-        if(lbl){ ctx.fillStyle='#636880'; ctx.font='8px Plus Jakarta Sans'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(lbl,x,pad.top+cH+4); }
+        if(lbl){ ctx.fillStyle='#636880'; ctx.font='8px Atkinson Hyperlegible Next'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(lbl,x,pad.top+cH+4); }
       }
     });
   }
@@ -663,7 +663,7 @@
     ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
     ctx.strokeStyle='#252838'; ctx.lineWidth=lw; ctx.stroke();
     if(total <= 1 && score === 0 && wrong === 0){
-      ctx.fillStyle='#636880'; ctx.font='11px Plus Jakarta Sans';
+      ctx.fillStyle='#636880'; ctx.font='11px Atkinson Hyperlegible Next';
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('Δεν υπάρχουν', cx, cy-8);
       ctx.fillText('δεδομένα', cx, cy+10); return;
@@ -678,9 +678,9 @@
     ctx.strokeStyle='#EF9F27'; ctx.lineWidth=lw; ctx.stroke();
     const p = Math.round(pct*100);
     ctx.fillStyle = p>=80?'#3fb950':p>=60?'#EF9F27':'#f85149';
-    ctx.font='bold 16px Plus Jakarta Sans'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='bold 16px Atkinson Hyperlegible Next'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(p+'%', cx, cy-8);
-    ctx.fillStyle='#636880'; ctx.font='9px Plus Jakarta Sans';
+    ctx.fillStyle='#636880'; ctx.font='9px Atkinson Hyperlegible Next';
     ctx.fillText('τελευταία', cx, cy+9);
     if(okId)  document.getElementById(okId).textContent  = score;
     if(errId) document.getElementById(errId).textContent = wrong;
@@ -703,11 +703,11 @@
       ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(pad.left+cW,y);
       ctx.strokeStyle=v===80?'rgba(63,185,80,0.25)':'rgba(255,255,255,0.05)';
       ctx.lineWidth=1; ctx.setLineDash(v===80?[4,4]:[]); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle='#636880'; ctx.font='9px Plus Jakarta Sans';
+      ctx.fillStyle='#636880'; ctx.font='9px Atkinson Hyperlegible Next';
       ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(v+'%',pad.left-4,y);
     });
     const y80=pad.top+cH-0.8*cH;
-    ctx.fillStyle='rgba(63,185,80,0.5)'; ctx.font='8px Plus Jakarta Sans';
+    ctx.fillStyle='rgba(63,185,80,0.5)'; ctx.font='8px Atkinson Hyperlegible Next';
     ctx.textAlign='left'; ctx.fillText('80%',pad.left+4,y80-6);
     ctx.beginPath();
     pcts.forEach((p,i)=>{ const x=pad.left+i*xStep,y=pad.top+cH-(p/100)*cH; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
@@ -726,7 +726,7 @@
       if(results[i]&&results[i].completedAt){
         const d=results[i].completedAt.toDate();
         const lbl=(n<=6)?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):(i===0||i===n-1?d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'}):'');
-        if(lbl){ ctx.fillStyle='#636880'; ctx.font='8px Plus Jakarta Sans'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(lbl,x,pad.top+cH+4); }
+        if(lbl){ ctx.fillStyle='#636880'; ctx.font='8px Atkinson Hyperlegible Next'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(lbl,x,pad.top+cH+4); }
       }
     });
   }
@@ -757,7 +757,7 @@
   --green:#3fb950;--red:#f85149;--blue:#58a6ff;
   --radius:12px;--radius-sm:8px;
 }
-body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;
+body{font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;font-size:16px;font-weight:400;background:var(--bg);color:var(--text);min-height:100vh;
   background-image:linear-gradient(rgba(239,159,39,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(239,159,39,0.018) 1px,transparent 1px);
   background-size:60px 60px;}
 #loading-gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;}
@@ -884,7 +884,7 @@ tbody tr:hover{background:rgba(255,255,255,0.015);}
 tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
 
 /* Mode card at bottom of panel */
-.mode-link{display:flex;align-items:center;justify-content:center;gap:0.625rem;padding:0.875rem;border-radius:var(--radius-sm);text-decoration:none;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:0.9rem;font-weight:700;transition:opacity 0.15s,transform 0.12s;margin-top:auto;}
+.mode-link{display:flex;align-items:center;justify-content:center;gap:0.625rem;padding:0.875rem;border-radius:var(--radius-sm);text-decoration:none;font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;font-size:0.9rem;font-weight:700;transition:opacity 0.15s,transform 0.12s;margin-top:auto;}
 .mode-link:hover{opacity:0.9;transform:translateY(-1px);}
 .mode-link--quiz{background:var(--gold);color:#0b0d14;}
 .mode-link--sim{background:var(--blue);color:#0b0d14;}
@@ -967,7 +967,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
 }
 .intro-tagline.show{opacity:1;transform:translateY(0);}
 .intro-academy{
-  font-family:'Plus Jakarta Sans',Inter,sans-serif;
+  font-family:'Atkinson Hyperlegible Next',Inter,sans-serif;
   font-size:clamp(0.75rem,1.38vw,0.98rem);
   font-weight:700;
   letter-spacing:0.45em;
@@ -978,7 +978,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
 }
 .intro-academy.show{opacity:1;}
 .intro-byline{
-  font-family:'Plus Jakarta Sans',Inter,sans-serif;
+  font-family:'Atkinson Hyperlegible Next',Inter,sans-serif;
   font-size:clamp(0.65rem,1.1vw,0.85rem);
   font-weight:500;
   letter-spacing:0.12em;
