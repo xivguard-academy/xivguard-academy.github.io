@@ -77,6 +77,20 @@
         'Πλατφόρμα εξάσκησης για τις ερωτήσεις πιστοποίησης Ε.Ο.Π.Π.Ε.Π. προσωπικού Ιδιωτικής Ασφάλειας';
     }
 
+    // ── Immediate empty-state renders (πριν φορτώσουν τα Firestore data) ────────
+    if(show105h){
+      drawQuizDonut(0, 0, 1);
+      drawQuizLine([], []);
+      drawQuizBar([]);
+      drawSimDonut(0, 0);
+      drawSimLine([], []);
+      drawSimBar([]);
+    }
+    if(showSAEK){
+      renderSAEKGroupStats([], 'a');
+      renderSAEKGroupStats([], 'b');
+    }
+
     const loads = [];
     if(show105h) loads.push(loadProgress(user,db), loadQuizResults(user,db), loadSimResults(user,db));
     if(showSAEK) loads.push(loadSAEKProgress(user,db), loadSAEKResults(user,db), loadSAEKQuizStats(user,db), loadSAEKSimResults(user,db));
