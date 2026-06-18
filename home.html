@@ -239,8 +239,6 @@
         document.getElementById('s-stat-avg').textContent   = '—';
         document.getElementById('s-stat-count').textContent = '0';
         document.getElementById('s-stat-last').textContent  = '—';
-        document.getElementById('s-donut-a').textContent = '—';
-        document.getElementById('s-donut-b').textContent = '—';
         drawSimDonut(0, 0);
         drawSimLine([], []);
         drawSimBar([]);
@@ -317,43 +315,49 @@
   }
 
   // ── Sim: Donut Chart ──────────────────────────────────────────────────────────
-  function drawSimDonut(partA, partB){
-    const canvas = document.getElementById('s-donut-canvas');
-    const ctx    = canvas.getContext('2d');
+  // ── Generic Part Donut (πράσινο=σωστές, κόκκινο=λάθος) ─────────────────────────
+  function drawPartDonut(canvasId, correct, total, centerLabel, okId, errId, isEmpty){
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
-    const cx = W/2, cy = H/2, r = Math.min(cx,cy)-22, lw = 20;
+    const cx = W/2, cy = H/2, r = Math.min(cx,cy)-16, lw = 16;
     ctx.clearRect(0,0,W,H);
     ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
     ctx.strokeStyle='#252838'; ctx.lineWidth=lw; ctx.stroke();
-    if(partA === 0 && partB === 0){
-      ctx.fillStyle='#636880'; ctx.font='11px Atkinson Hyperlegible Next';
+    if(okId  && document.getElementById(okId))  document.getElementById(okId).textContent  = '—';
+    if(errId && document.getElementById(errId)) document.getElementById(errId).textContent = '—';
+    if(isEmpty || total === 0){
+      ctx.fillStyle='#636880'; ctx.font='9px Atkinson Hyperlegible Next';
       ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText('Δεν υπάρχουν', cx, cy-8);
-      ctx.fillText('δεδομένα', cx, cy+10); return;
+      ctx.fillText('Δεν υπάρχουν', cx, cy-7);
+      ctx.fillText('δεδομένα', cx, cy+7);
+      return;
     }
-    const total = 40; // max 20+20
-    const fracA = partA / total;
-    const fracB = partB / total;
+    const wrong = total - correct;
+    const pct   = correct / total;
     const start = -Math.PI/2;
-    // Part B arc (blue)
-    if(partB > 0){
-      ctx.beginPath(); ctx.arc(cx,cy,r, start+fracA*Math.PI*2, start+(fracA+fracB)*Math.PI*2);
-      ctx.strokeStyle='#58a6ff'; ctx.lineWidth=lw; ctx.stroke();
+    if(wrong > 0){
+      ctx.beginPath(); ctx.arc(cx,cy,r,start+pct*Math.PI*2,start+Math.PI*2);
+      ctx.strokeStyle='#f85149'; ctx.lineWidth=lw; ctx.stroke();
     }
-    // Part A arc (gold)
-    if(partA > 0){
-      ctx.beginPath(); ctx.arc(cx,cy,r,start,start+fracA*Math.PI*2);
-      ctx.strokeStyle='#EF9F27'; ctx.lineWidth=lw; ctx.stroke();
+    if(correct > 0){
+      ctx.beginPath(); ctx.arc(cx,cy,r,start,start+pct*Math.PI*2);
+      ctx.strokeStyle='#3fb950'; ctx.lineWidth=lw; ctx.stroke();
     }
-    const avg = ((partA+partB)/2).toFixed(1);
-    const color = parseFloat(avg)>=10?'#3fb950':'#f85149';
-    ctx.fillStyle=color; ctx.font='bold 16px Atkinson Hyperlegible Next';
+    ctx.fillStyle='#e8eaf2'; ctx.font='bold 13px Atkinson Hyperlegible Next';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(avg, cx, cy-8);
-    ctx.fillStyle='#636880'; ctx.font='9px Atkinson Hyperlegible Next';
-    ctx.fillText('μ.ο. /20', cx, cy+9);
-    document.getElementById('s-donut-a').textContent = partA+'/20';
-    document.getElementById('s-donut-b').textContent = partB+'/20';
+    ctx.fillText(correct+'/'+total, cx, cy-7);
+    ctx.fillStyle='#636880'; ctx.font='8px Atkinson Hyperlegible Next';
+    ctx.fillText(centerLabel, cx, cy+8);
+    if(okId  && document.getElementById(okId))  document.getElementById(okId).textContent  = correct;
+    if(errId && document.getElementById(errId)) document.getElementById(errId).textContent = wrong;
+  }
+
+  function drawSimDonut(partA, partB){
+    const isEmpty = (partA === 0 && partB === 0);
+    drawPartDonut('s-donut-a-canvas', partA, 20, 'Μέρος Α', 's-donut-a-ok', 's-donut-a-err', isEmpty);
+    drawPartDonut('s-donut-b-canvas', partB, 20, 'Μέρος Β', 's-donut-b-ok', 's-donut-b-err', isEmpty);
   }
 
   // ── Quiz: Line Chart ──────────────────────────────────────────────────────────
@@ -494,6 +498,7 @@
       if(el) el.textContent = id==='saek-sim-count'?'0':'—';
     });
     drawSAEKSimDonut(0, 0, true, 'saek-sim-donut-canvas', 'saek-sim-donut-ok', 'saek-sim-donut-err');
+    drawPartDonut('saek-sim-donut-b-canvas', 0, 20, 'Μέρος Β', 'saek-sim-donut-b-ok', 'saek-sim-donut-b-err', true);
     drawSAEKSimLine([], [], 'saek-sim-line-canvas');
     drawSAEKSimBar([]);
     const tbody = document.getElementById('saek-sim-history-tbody');
@@ -528,6 +533,7 @@
       // Charts
       const lRes = results[0];
       drawSAEKSimDonut(lRes.partACorrect??0, (12-(lRes.partACorrect??0)), false, 'saek-sim-donut-canvas', 'saek-sim-donut-ok', 'saek-sim-donut-err');
+      drawPartDonut('saek-sim-donut-b-canvas', lRes.partBScore??0, 20, 'Μέρος Β', 'saek-sim-donut-b-ok', 'saek-sim-donut-b-err', false);
       drawSAEKSimLine([...scores].reverse(), [...results].reverse(), 'saek-sim-line-canvas');
       drawSAEKSimBar(results);
       // History table
@@ -549,35 +555,7 @@
   }
 
   function drawSAEKSimDonut(correct, wrong, empty, canvasId, okId, errId){
-    const canvas = document.getElementById(canvasId);
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const W=canvas.width, H=canvas.height, cx=W/2, cy=H/2, r=Math.min(cx,cy)-22, lw=20;
-    ctx.clearRect(0,0,W,H);
-    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
-    ctx.strokeStyle='#252838'; ctx.lineWidth=lw; ctx.stroke();
-    if(empty){
-      ctx.fillStyle='#636880'; ctx.font='11px Atkinson Hyperlegible Next';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText('Δεν υπάρχουν', cx, cy-8); ctx.fillText('δεδομένα', cx, cy+10); return;
-    }
-    const total = correct + wrong;
-    if(total > 0 && correct > 0){
-      const start = -Math.PI/2;
-      const end   = start + (correct/total)*Math.PI*2;
-      ctx.beginPath(); ctx.arc(cx,cy,r,start,end);
-      ctx.strokeStyle='#58a6ff'; ctx.lineWidth=lw; ctx.stroke();
-    }
-    if(total > 0 && wrong > 0){
-      const s2 = -Math.PI/2 + (correct/total)*Math.PI*2;
-      ctx.beginPath(); ctx.arc(cx,cy,r,s2,s2+(wrong/total)*Math.PI*2);
-      ctx.strokeStyle='#f85149'; ctx.lineWidth=lw; ctx.stroke();
-    }
-    ctx.fillStyle='#e8eaf2'; ctx.font='bold 14px Atkinson Hyperlegible Next';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(correct+'/12', cx, cy);
-    if(document.getElementById(okId))  document.getElementById(okId).textContent  = correct;
-    if(document.getElementById(errId)) document.getElementById(errId).textContent = wrong;
+    drawPartDonut(canvasId, correct, 12, 'Μέρος Α', okId, errId, empty);
   }
 
   function drawSAEKSimLine(scores, results, canvasId){
@@ -689,7 +667,7 @@
       ctx.strokeStyle='#f85149'; ctx.lineWidth=lw; ctx.stroke();
     }
     ctx.beginPath(); ctx.arc(cx,cy,r,start,start+pct*Math.PI*2);
-    ctx.strokeStyle='#EF9F27'; ctx.lineWidth=lw; ctx.stroke();
+    ctx.strokeStyle='#3fb950'; ctx.lineWidth=lw; ctx.stroke();
     const p = Math.round(pct*100);
     ctx.fillStyle = p>=80?'#3fb950':p>=60?'#EF9F27':'#f85149';
     ctx.font='bold 16px Atkinson Hyperlegible Next'; ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -1232,13 +1210,26 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
         <!-- Donut -->
         <div class="chart-inner">
           <div class="chart-label">Τελευταία Προσπάθεια</div>
-          <div class="donut-row">
-            <div class="donut-canvas-wrap">
-              <canvas id="s-donut-canvas" width="120" height="120"></canvas>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+            <div class="donut-row">
+              <div class="donut-canvas-wrap">
+                <canvas id="s-donut-a-canvas" width="100" height="100"></canvas>
+              </div>
+              <div class="donut-legend">
+                <div class="donut-title">Μέρος Α</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div>Σωστές: <strong id="s-donut-a-ok">—</strong></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div>Λάθος: <strong id="s-donut-a-err">—</strong></div>
+              </div>
             </div>
-            <div class="donut-legend">
-              <div class="legend-item"><div class="legend-dot" style="background:#EF9F27"></div>Μέρος Α: <strong id="s-donut-a">—</strong></div>
-              <div class="legend-item"><div class="legend-dot" style="background:#58a6ff"></div>Μέρος Β: <strong id="s-donut-b">—</strong></div>
+            <div class="donut-row">
+              <div class="donut-canvas-wrap">
+                <canvas id="s-donut-b-canvas" width="100" height="100"></canvas>
+              </div>
+              <div class="donut-legend">
+                <div class="donut-title">Μέρος Β</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div>Σωστές: <strong id="s-donut-b-ok">—</strong></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div>Λάθος: <strong id="s-donut-b-err">—</strong></div>
+              </div>
             </div>
           </div>
         </div>
@@ -1366,7 +1357,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
               </div>
               <div class="donut-legend">
                 <div class="donut-title">Ομάδα Α</div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Σωστές: <strong id="qs-a-donut-ok">—</strong></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div>Σωστές: <strong id="qs-a-donut-ok">—</strong></div>
                 <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div>Λάθος: <strong id="qs-a-donut-err">—</strong></div>
               </div>
             </div>
@@ -1442,7 +1433,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
               </div>
               <div class="donut-legend">
                 <div class="donut-title">Ομάδα Β</div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Σωστές: <strong id="qs-b-donut-ok">—</strong></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div>Σωστές: <strong id="qs-b-donut-ok">—</strong></div>
                 <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div>Λάθος: <strong id="qs-b-donut-err">—</strong></div>
               </div>
             </div>
@@ -1512,14 +1503,26 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
           <!-- Donut -->
           <div class="chart-inner">
             <div class="chart-label">Τελευταία Προσπάθεια</div>
-            <div class="donut-row">
-              <div class="donut-canvas-wrap">
-                <canvas id="saek-sim-donut-canvas" width="120" height="120"></canvas>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+              <div class="donut-row">
+                <div class="donut-canvas-wrap">
+                  <canvas id="saek-sim-donut-canvas" width="100" height="100"></canvas>
+                </div>
+                <div class="donut-legend">
+                  <div class="donut-title">Μέρος Α</div>
+                  <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div>Σωστές: <strong id="saek-sim-donut-ok">—</strong></div>
+                  <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div>Λάθος: <strong id="saek-sim-donut-err">—</strong></div>
+                </div>
               </div>
-              <div class="donut-legend">
-                <div class="donut-title">Μέρος Α</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#58a6ff"></div>Σωστές: <strong id="saek-sim-donut-ok">—</strong></div>
-                <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div>Λάθος: <strong id="saek-sim-donut-err">—</strong></div>
+              <div class="donut-row">
+                <div class="donut-canvas-wrap">
+                  <canvas id="saek-sim-donut-b-canvas" width="100" height="100"></canvas>
+                </div>
+                <div class="donut-legend">
+                  <div class="donut-title">Μέρος Β</div>
+                  <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div>Σωστές: <strong id="saek-sim-donut-b-ok">—</strong></div>
+                  <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div>Λάθος: <strong id="saek-sim-donut-b-err">—</strong></div>
+                </div>
               </div>
             </div>
           </div>
