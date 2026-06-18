@@ -776,7 +776,7 @@ body{font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;font-size:16p
 .welcome-sub{font-size:0.82rem;color:var(--text3);}
 
 /* ── Track Switcher (dual-track χρήστες) ── */
-#track-switcher{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem 1rem;margin-bottom:1rem;}
+#track-switcher{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem 0;margin-bottom:1rem;}
 .ts-inner{display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;}
 .ts-label{font-size:0.68rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;}
 .ts-btns{display:flex;gap:6px;flex:1;}
@@ -816,8 +816,8 @@ body{font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;font-size:16p
 .s-gold-panel{ border-color: rgba(239,159,39,0.25); }
 .saek-info-msg{
   background:rgba(56,139,253,0.06);border:1px solid rgba(56,139,253,0.15);
-  border-radius:var(--radius-sm);padding:1.25rem;
-  display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;
+  border-radius:var(--radius-sm);padding:0;
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;
   margin-top:0.5rem;
 }
 .saek-group-card{
@@ -1267,8 +1267,8 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
 
       <!-- SAEK Progress Cards -->
       <div id="saek-progress-wrap" style="display:none;margin-bottom:1rem;"></div>
-      <div class="panel s-gold-panel">
-        <div class="panel-header">
+      <div class="panel s-gold-panel" style="padding-left:0;padding-right:0;">
+        <div class="panel-header" style="padding:0 1.25rem;">
           <div class="panel-header-left">
             <span class="panel-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -1301,7 +1301,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
           </div>
         </div>
 
-        <div style="margin-top:0.875rem;font-size:0.78rem;color:var(--text3);line-height:1.6;">
+        <div style="margin-top:0.875rem;font-size:0.78rem;color:var(--text3);line-height:1.6;padding:0 1.25rem;">
           Εξασκήσου στις ερωτήσεις πιστοποίησης <strong style="color:var(--text2);">ΕΟΠΠΕΠ</strong> για το πρόγραμμα
           <strong style="color:var(--text2);">Στελέχους Ασφαλείας Προσώπων & Υποδομών</strong>.
           Επίλεξε ομάδα ερωτήσεων και ξεκίνα την εξάσκησή σου.
