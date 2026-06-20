@@ -814,7 +814,6 @@ body{font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;font-size:16p
 .mode-link--saek:hover{background:#5a9eff;}
 .s-saek-panel{ border-color: rgba(56,139,253,0.25); }
 .s-gold-panel{ border-color: rgba(239,159,39,0.25); }
-#section-saek > .panel.s-gold-panel{padding-left:0 !important;padding-right:0 !important;}
 .saek-info-msg{
   background:rgba(56,139,253,0.06);border:1px solid rgba(56,139,253,0.15);
   border-radius:var(--radius-sm);padding:0;
@@ -1269,7 +1268,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
       <!-- SAEK Progress Cards -->
       <div id="saek-progress-wrap" style="display:none;margin-bottom:1rem;"></div>
       <div class="panel s-gold-panel">
-        <div class="panel-header" style="padding:0 1.25rem;">
+        <div class="panel-header">
           <div class="panel-header-left">
             <span class="panel-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -1281,31 +1280,31 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
           </div>
         </div>
 
-        <div class="saek-info-msg">
-          <div class="saek-group-card">
-            <div class="sg-lbl">Ομάδα</div>
-            <div class="sg-name">Α</div>
-            <div class="sg-count">124 ερωτήσεις</div>
-            <div id="saek-result-A" style="display:none;margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--border2);"></div>
-          </div>
-          <div class="saek-group-card">
-            <div class="sg-lbl">Ομάδα</div>
-            <div class="sg-name">Β</div>
-            <div class="sg-count">139 ερωτήσεις</div>
-            <div id="saek-result-B" style="display:none;margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--border2);"></div>
-          </div>
-          <div class="saek-group-card" style="border-color:rgba(88,166,255,0.25);background:rgba(88,166,255,0.04);">
-            <div class="sg-lbl" style="color:#58a6ff;">Τεστ</div>
-            <div class="sg-name" style="color:#58a6ff;font-size:1.1rem;">Προσομοίωση</div>
-            <div class="sg-count" id="saek-sim-card-sub">12 θεωρητικές + 2 σενάρια</div>
-            <div id="saek-sim-card-score" style="display:none;margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--border2);"></div>
-          </div>
-        </div>
-
-        <div style="margin-top:0.875rem;font-size:0.78rem;color:var(--text3);line-height:1.6;padding:0 1.25rem;">
+        <div style="margin-top:0.875rem;font-size:0.78rem;color:var(--text3);line-height:1.6;">
           Εξασκήσου στις ερωτήσεις πιστοποίησης <strong style="color:var(--text2);">ΕΟΠΠΕΠ</strong> για το πρόγραμμα
           <strong style="color:var(--text2);">Στελέχους Ασφαλείας Προσώπων & Υποδομών</strong>.
           Επίλεξε ομάδα ερωτήσεων και ξεκίνα την εξάσκησή σου.
+        </div>
+      </div>
+
+      <div class="saek-info-msg">
+        <div class="saek-group-card">
+          <div class="sg-lbl">Ομάδα</div>
+          <div class="sg-name">Α</div>
+          <div class="sg-count">124 ερωτήσεις</div>
+          <div id="saek-result-A" style="display:none;margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--border2);"></div>
+        </div>
+        <div class="saek-group-card">
+          <div class="sg-lbl">Ομάδα</div>
+          <div class="sg-name">Β</div>
+          <div class="sg-count">139 ερωτήσεις</div>
+          <div id="saek-result-B" style="display:none;margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--border2);"></div>
+        </div>
+        <div class="saek-group-card" style="border-color:rgba(88,166,255,0.25);background:rgba(88,166,255,0.04);">
+          <div class="sg-lbl" style="color:#58a6ff;">Τεστ</div>
+          <div class="sg-name" style="color:#58a6ff;font-size:1.1rem;">Προσομοίωση</div>
+          <div class="sg-count" id="saek-sim-card-sub">12 θεωρητικές + 2 σενάρια</div>
+          <div id="saek-sim-card-score" style="display:none;margin-top:0.75rem;padding-top:0.625rem;border-top:1px solid var(--border2);"></div>
         </div>
       </div>
 
