@@ -815,7 +815,7 @@ body{font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;font-size:16p
 .s-saek-panel{ border-color: rgba(56,139,253,0.25); }
 .s-gold-panel{ border-color: rgba(239,159,39,0.25); }
 .saek-mini-grid{
-  display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:1.5rem;
   margin-top:1.5rem;
 }
 .saek-group-card{
@@ -860,7 +860,7 @@ canvas.line-canvas{display:block;width:100%;height:130px;}
 .bar-fill-gold{background:#EF9F27;}
 .bar-fill-blue{background:#58a6ff;}
 .bar-fill-saek{background:#388bfd;}
-.saek-stats-grid{margin-top:1.5rem;grid-template-columns:1fr 1fr 1fr;}
+.saek-stats-grid{margin-top:1.5rem;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);}
 .bar-lbl{font-size:0.6rem;color:var(--text3);white-space:nowrap;}
 .bar-count{font-size:0.6rem;font-weight:700;color:var(--text2);min-height:14px;}
 
@@ -1503,8 +1503,8 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
           <!-- Donut -->
           <div class="chart-inner">
             <div class="chart-label">Τελευταία Προσπάθεια</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-              <div class="donut-row" style="gap:0.5rem;">
+            <div style="display:grid;grid-template-columns:1fr;gap:0.75rem;">
+              <div class="donut-row">
                 <div class="donut-canvas-wrap">
                   <canvas id="saek-sim-donut-canvas" width="120" height="120"></canvas>
                 </div>
@@ -1514,7 +1514,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
                   <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div>Λάθος: <strong id="saek-sim-donut-err">—</strong></div>
                 </div>
               </div>
-              <div class="donut-row" style="gap:0.5rem;">
+              <div class="donut-row">
                 <div class="donut-canvas-wrap">
                   <canvas id="saek-sim-donut-b-canvas" width="120" height="120"></canvas>
                 </div>
@@ -1542,7 +1542,7 @@ tbody td{padding:0.55rem 0.75rem;font-size:0.78rem;color:var(--text2);}
           <!-- History -->
           <div>
             <div class="section-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 15 15"/></svg>Ιστορικό Προσομοιώσεων</div>
-            <div class="table-wrap">
+            <div class="table-wrap" style="overflow-x:auto;">
               <table>
                 <thead><tr><th>Ημερομηνία</th><th style="white-space:nowrap">Μέρος Α (/100)</th><th style="white-space:nowrap">Μέρος Β (/20)</th><th>Αποτέλεσμα</th></tr></thead>
                 <tbody id="saek-sim-history-tbody"></tbody>
