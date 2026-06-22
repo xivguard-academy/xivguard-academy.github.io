@@ -11,7 +11,7 @@
   import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut }
                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, getDoc }
+  import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, getDoc, limit }
                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -344,6 +344,34 @@
     document.getElementById('tab-'+tab).classList.add('active');
     document.getElementById('panel-'+tab).style.display='block';
   };
+
+  let logsLoaded = false;
+  window.loadLoginLogs = async () => {
+    if(logsLoaded) return;
+    const tbody = document.getElementById('logs-tbody');
+    tbody.innerHTML = '<tr><td colspan="3" class="empty-msg">Φόρτωση...</td></tr>';
+    try {
+      const q    = query(collection(db,'loginLogs'), orderBy('loggedAt','desc'), limit(50));
+      const snap = await getDocs(q);
+      if(snap.empty){
+        tbody.innerHTML = '<tr><td colspan="3" class="empty-msg">Δεν υπάρχουν καταγεγραμμένες συνδέσεις ακόμα.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = '';
+      snap.forEach(d => {
+        const r    = d.data();
+        const dt   = r.loggedAt ? r.loggedAt.toDate() : null;
+        const date = dt ? dt.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+        const time = dt ? dt.toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}) : '—';
+        const tr   = document.createElement('tr');
+        tr.innerHTML = `<td>${r.email ?? '—'}</td><td>${date}</td><td>${time}</td>`;
+        tbody.appendChild(tr);
+      });
+      logsLoaded = true;
+    } catch(e){
+      tbody.innerHTML = '<tr><td colspan="3" class="empty-msg">Σφάλμα φόρτωσης: ' + e.message + '</td></tr>';
+    }
+  };
 </script>
 
 <style>
@@ -478,6 +506,9 @@ tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
       <button class="tab-btn" id="tab-stats" onclick="switchTab('stats')">
         Στατιστικά Χρηστών <span class="badge" id="badge-stats"></span>
       </button>
+      <button class="tab-btn" id="tab-logs" onclick="switchTab('logs'); loadLoginLogs();">
+        🕐 Συνδέσεις
+      </button>
     </div>
 
     <!-- Panel: Pending -->
@@ -550,6 +581,22 @@ tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
             </tr>
           </thead>
           <tbody id="stats-tbody"><tr><td colspan="7" class="empty-msg">Φόρτωση...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Panel: Login Logs -->
+    <div id="panel-logs" class="tab-panel" style="display:none;">
+      <div class="section-hdr">
+        <div>
+          <div class="section-title">Ιστορικό Συνδέσεων</div>
+          <div class="section-sub">Τελευταίες 50 συνδέσεις χρηστών (εξαιρείται ο διαχειριστής)</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Email</th><th>Ημερομηνία</th><th>Ώρα</th></tr></thead>
+          <tbody id="logs-tbody"><tr><td colspan="3" class="empty-msg">Κλικ στην καρτέλα για φόρτωση...</td></tr></tbody>
         </table>
       </div>
     </div>
