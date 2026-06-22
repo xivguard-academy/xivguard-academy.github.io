@@ -11,7 +11,7 @@
   import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut }
                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, getDoc, limit }
+  import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, getDoc, limit }
                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -345,18 +345,58 @@
     document.getElementById('panel-'+tab).style.display='block';
   };
 
-  let logsLoaded = false;
   window.loadLoginLogs = async () => {
-    if(logsLoaded) return;
-    const tbody = document.getElementById('logs-tbody');
-    tbody.innerHTML = '<tr><td colspan="3" class="empty-msg">Φόρτωση...</td></tr>';
+    const container = document.getElementById('logs-container');
+    container.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;padding:1rem 0;">Φόρτωση χρηστών...</p>';
     try {
-      const q    = query(collection(db,'loginLogs'), orderBy('loggedAt','desc'), limit(50));
-      const snap = await getDocs(q);
-      if(snap.empty){
-        tbody.innerHTML = '<tr><td colspan="3" class="empty-msg">Δεν υπάρχουν καταγεγραμμένες συνδέσεις ακόμα.</td></tr>';
+      const snap = await getDocs(collection(db,'users'));
+      const users = [];
+      snap.forEach(d => {
+        const u = d.data();
+        if(u.status === 'approved' && !u.isAdmin) users.push({ uid: d.id, email: u.email });
+      });
+      users.sort((a,b) => a.email.localeCompare(b.email));
+      if(users.length === 0){
+        container.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;padding:1rem 0;">Δεν υπάρχουν χρήστες.</p>';
         return;
       }
+      container.innerHTML = '';
+      users.forEach(u => {
+        const wrap = document.createElement('div');
+        wrap.className = 'log-user-block';
+        wrap.innerHTML = `
+          <div class="log-user-row" onclick="toggleUserLogs(this, '${u.uid}', '${u.email}')">
+            <span class="log-user-email">${u.email}</span>
+            <span class="log-chevron">▸</span>
+          </div>
+          <div class="log-user-detail" style="display:none;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead><tr><th>Ημερομηνία</th><th>Ώρα</th></tr></thead>
+              <tbody class="log-detail-tbody"><tr><td colspan="2" class="empty-msg">Φόρτωση...</td></tr></tbody>
+            </table>
+          </div>`;
+        container.appendChild(wrap);
+      });
+    } catch(e){
+      container.innerHTML = '<p style="color:var(--red);font-size:0.85rem;padding:1rem 0;">Σφάλμα: ' + e.message + '</p>';
+    }
+  };
+
+  window.toggleUserLogs = async (rowEl, uid, email) => {
+    const block  = rowEl.closest('.log-user-block');
+    const detail = block.querySelector('.log-user-detail');
+    const chevron = rowEl.querySelector('.log-chevron');
+    const isOpen = detail.style.display !== 'none';
+    if(isOpen){ detail.style.display='none'; chevron.textContent='▸'; return; }
+    detail.style.display = 'block';
+    chevron.textContent = '▾';
+    const tbody = block.querySelector('.log-detail-tbody');
+    if(tbody.dataset.loaded) return;
+    tbody.innerHTML = '<tr><td colspan="2" class="empty-msg">Φόρτωση...</td></tr>';
+    try {
+      const q    = query(collection(db,'loginLogs'), where('uid','==',uid), orderBy('loggedAt','desc'), limit(50));
+      const snap = await getDocs(q);
+      if(snap.empty){ tbody.innerHTML = '<tr><td colspan="2" class="empty-msg">Καμία σύνδεση ακόμα.</td></tr>'; return; }
       tbody.innerHTML = '';
       snap.forEach(d => {
         const r    = d.data();
@@ -364,12 +404,12 @@
         const date = dt ? dt.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
         const time = dt ? dt.toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}) : '—';
         const tr   = document.createElement('tr');
-        tr.innerHTML = `<td>${r.email ?? '—'}</td><td>${date}</td><td>${time}</td>`;
+        tr.innerHTML = `<td>${date}</td><td>${time}</td>`;
         tbody.appendChild(tr);
       });
-      logsLoaded = true;
+      tbody.dataset.loaded = '1';
     } catch(e){
-      tbody.innerHTML = '<tr><td colspan="3" class="empty-msg">Σφάλμα φόρτωσης: ' + e.message + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="2" class="empty-msg">Σφάλμα: ' + e.message + '</td></tr>';
     }
   };
 </script>
@@ -445,6 +485,18 @@ tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
 .btn-disable:hover{background:rgba(239,159,39,0.2);}
 .btn-delete{background:rgba(248,81,73,0.08);border:1px solid rgba(248,81,73,0.2);border-radius:6px;padding:0.3rem 0.7rem;color:#f85149;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;opacity:0.7;}
 .btn-delete:hover{background:rgba(248,81,73,0.2);opacity:1;}
+
+/* Login logs */
+.log-user-block{border-bottom:1px solid var(--border);}
+.log-user-block:last-child{border-bottom:none;}
+.log-user-row{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;cursor:pointer;transition:background 0.15s;}
+.log-user-row:hover{background:rgba(239,159,39,0.04);}
+.log-user-email{font-size:0.875rem;color:var(--text2);}
+.log-chevron{color:var(--text3);font-size:0.8rem;}
+.log-user-detail{background:var(--surface2);border-top:1px solid var(--border);}
+.log-user-detail table th{font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;padding:0.5rem 1rem;text-align:left;border-bottom:1px solid var(--border);}
+.log-user-detail table td{font-size:0.82rem;color:var(--text2);padding:0.45rem 1rem;border-bottom:1px solid var(--border);}
+.log-user-detail table tr:last-child td{border-bottom:none;}
 
 /* Stats table: expandable rows */
 .user-summary-row{cursor:pointer;transition:background 0.12s;}
@@ -590,14 +642,13 @@ tbody td{padding:0.75rem 1rem;font-size:0.85rem;color:var(--text2);}
       <div class="section-hdr">
         <div>
           <div class="section-title">Ιστορικό Συνδέσεων</div>
-          <div class="section-sub">Τελευταίες 50 συνδέσεις χρηστών (εξαιρείται ο διαχειριστής)</div>
+          <div class="section-sub">Κλικ σε χρήστη για τις τελευταίες 50 συνδέσεις του</div>
         </div>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Email</th><th>Ημερομηνία</th><th>Ώρα</th></tr></thead>
-          <tbody id="logs-tbody"><tr><td colspan="3" class="empty-msg">Κλικ στην καρτέλα για φόρτωση...</td></tr></tbody>
-        </table>
+      <div class="table-wrap" style="padding:0.5rem 0;">
+        <div id="logs-container" style="padding:0 0.25rem;">
+          <p style="color:var(--text3);font-size:0.85rem;padding:1rem;">Κλικ στην καρτέλα για φόρτωση...</p>
+        </div>
       </div>
     </div>
 
