@@ -391,7 +391,6 @@
     detail.style.display = 'block';
     chevron.textContent = '▾';
     const tbody = block.querySelector('.log-detail-tbody');
-    if(tbody.dataset.loaded) return;
     tbody.innerHTML = '<tr><td colspan="2" class="empty-msg">Φόρτωση...</td></tr>';
     try {
       const q    = query(collection(db,'loginLogs'), where('uid','==',uid), orderBy('loggedAt','desc'), limit(50));
@@ -407,7 +406,6 @@
         tr.innerHTML = `<td>${date}</td><td>${time}</td>`;
         tbody.appendChild(tr);
       });
-      tbody.dataset.loaded = '1';
     } catch(e){
       tbody.innerHTML = '<tr><td colspan="2" class="empty-msg">Σφάλμα: ' + e.message + '</td></tr>';
     }
