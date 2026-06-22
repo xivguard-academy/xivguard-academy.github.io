@@ -45,6 +45,16 @@
       if (user.email === ADMIN_EMAIL) {
         window.location.href = 'admin.html';
       } else {
+        if (sessionStorage.getItem('_logLogin') === '1') {
+          sessionStorage.removeItem('_logLogin');
+          try {
+            await addDoc(collection(db, 'loginLogs'), {
+              uid:      user.uid,
+              email:    user.email,
+              loggedAt: serverTimestamp()
+            });
+          } catch(e) { console.warn('Login log failed:', e); }
+        }
         window.location.href = 'home.html';
       }
     } else {
@@ -152,13 +162,7 @@
         if(data.isAdmin || email === ADMIN_EMAIL){
           window.location.href = 'admin.html';
         } else {
-          try {
-            await addDoc(collection(db, 'loginLogs'), {
-              uid:      cred.user.uid,
-              email:    email,
-              loggedAt: serverTimestamp()
-            });
-          } catch(e){ console.warn('Login log failed:', e); }
+          sessionStorage.setItem('_logLogin', '1');
           window.location.href = 'home.html';
         }
       }
