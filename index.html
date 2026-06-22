@@ -44,17 +44,7 @@
     if (data.status === 'approved') {
       if (user.email === ADMIN_EMAIL) {
         window.location.href = 'admin.html';
-      } else {
-        if (sessionStorage.getItem('_logLogin') === '1') {
-          sessionStorage.removeItem('_logLogin');
-          try {
-            await addDoc(collection(db, 'loginLogs'), {
-              uid:      user.uid,
-              email:    user.email,
-              loggedAt: serverTimestamp()
-            });
-          } catch(e) { console.warn('Login log failed:', e); }
-        }
+      } else if (!window._loggingIn) {
         window.location.href = 'home.html';
       }
     } else {
@@ -147,6 +137,7 @@
     const btn = document.getElementById('login-btn');
     btn.disabled = true; btn.textContent = 'Σύνδεση...';
 
+    window._loggingIn = true;
     try {
       const cred = await signInWithEmailAndPassword(auth, email, pass);
       const snap = await getDoc(doc(db, 'users', cred.user.uid));
@@ -160,13 +151,22 @@
         btn.disabled=false; btn.textContent='Σύνδεση';
       } else if(data.status === 'approved'){
         if(data.isAdmin || email === ADMIN_EMAIL){
+          window._loggingIn = false;
           window.location.href = 'admin.html';
         } else {
-          sessionStorage.setItem('_logLogin', '1');
+          try {
+            await addDoc(collection(db, 'loginLogs'), {
+              uid:      cred.user.uid,
+              email:    email,
+              loggedAt: serverTimestamp()
+            });
+          } catch(e){ console.warn('Login log failed:', e); }
+          window._loggingIn = false;
           window.location.href = 'home.html';
         }
       }
     } catch(e){
+      window._loggingIn = false;
       btn.disabled=false; btn.textContent='Σύνδεση';
       errEl.textContent = translateError(e.code);
     }
